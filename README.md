@@ -1,5 +1,5 @@
 # Go-design-codes
-Some cool code write by Go & source code note .(一些用Go语言写的有设计感的demo合集 和 Go源码分析)
+Some cool code written by Go & source code note .(一些用Go语言写的有设计感的 demo 合集 和 Go源码分析)
 
 ### 数据结构
 - [ ] dag
