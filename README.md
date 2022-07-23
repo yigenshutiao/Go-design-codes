@@ -3,6 +3,7 @@ Some cool code written by Go & Source code note .(一些用Go语言写的有设�
 
 ### 数据结构
 - [ ] dag
+- [ ] minimal ast
 
 ### 设计模式
 - [ ] 工厂模式
