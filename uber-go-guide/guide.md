@@ -226,9 +226,7 @@ sPtrs := map[int]*S{1: {"A"}}
 sPtrs[1].Read()
 sPtrs[1].Write("test")
 ```
-
-Similarly, an interface can be satisfied by a pointer, even if the method has a
-value receiver.
+同样的，接口可以通过指针调用，即使这个方法的接收者是指类型。
 
 ```go
 type F interface {
@@ -253,18 +251,17 @@ i = s1Val
 i = s1Ptr
 i = s2Ptr
 
-// The following doesn't compile, since s2Val is a value, and there is no value receiver for f.
+// 这个例子编译会报错，因为s2Val是值类型，而S2的方法里接收者是指针类型.
 //   i = s2Val
 ```
 
-Effective Go has a good write up on [Pointers vs. Values].
+Effective Go 有一段关于 [Pointers vs. Values] 的优秀讲解
 
 [Pointers vs. Values]: https://golang.org/doc/effective_go.html#pointers_vs_values
 
-### Zero-value Mutexes are Valid
+### Mutexes的零值是有效的
 
-The zero-value of `sync.Mutex` and `sync.RWMutex` is valid, so you almost
-never need a pointer to a mutex.
+`sync.Mutex` 和 `sync.RWMutex` 的零值是有效的，所以不需要实例化一个Mutex的指针。
 
 <table>
 <thead><tr><th>Bad</th><th>Good</th></tr></thead>
@@ -286,8 +283,8 @@ mu.Lock()
 </td></tr>
 </tbody></table>
 
-If you use a struct by pointer, then the mutex should be a non-pointer field on
-it. Do not embed the mutex on the struct, even if the struct is not exported.
+如果结构体中包含mutex，在使用结构体的指针时，mutex应该是结构体的非指针字段，也不要把mutex内嵌到结构体中，即使结构体是非导出类型。
+
 
 <table>
 <thead><tr><th>Bad</th><th>Good</th></tr></thead>
@@ -342,26 +339,23 @@ func (m *SMap) Get(k string) string {
 
 <tr><td>
 
-The `Mutex` field, and the `Lock` and `Unlock` methods are unintentionally part
-of the exported API of `SMap`.
+隐式嵌入`Mutex`, 其`Lock`和`Unlock`方法是`SMap`公开API中不明确说明的一部分。
 
 </td><td>
 
-The mutex and its methods are implementation details of `SMap` hidden from its
-callers.
+mutex和它`SMap`方法的实现细节对调用方屏蔽。
+
 
 </td></tr>
 </tbody></table>
 
-### Copy Slices and Maps at Boundaries
+### 在边界拷贝Slices和Maps
 
-Slices and maps contain pointers to the underlying data so be wary of scenarios
-when they need to be copied.
+slice 和 map 类型包含指向data数据的指针，所以当你需要复制时应格外注意。
 
-#### Receiving Slices and Maps
+#### 接收slice和map
 
-Keep in mind that users can modify a map or slice you received as an argument
-if you store a reference to it.
+如果在函数调用中传递了 map 或 slice, 请记住这个函数可以对其进行修改。
 
 <table>
 <thead><tr><th>Bad</th> <th>Good</th></tr></thead>
