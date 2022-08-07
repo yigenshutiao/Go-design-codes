@@ -349,13 +349,13 @@ mutex和它`SMap`方法的实现细节对调用方屏蔽。
 </td></tr>
 </tbody></table>
 
-### 在边界拷贝Slices和Maps
+### 在边界拷贝 Slices 和 Maps
 
 slice 和 map 类型包含指向data数据的指针，所以当你需要复制时应格外注意。
 
-#### 接收slice和map
+#### 接收 Slices 和 Maps
 
-如果在函数调用中传递了 map 或 slice, 请记住这个函数可以对其进行修改。
+如果在函数调用中传递 map 或 slice, 请记住这个函数可以修改它。
 
 <table>
 <thead><tr><th>Bad</th> <th>Good</th></tr></thead>
@@ -371,7 +371,7 @@ func (d *Driver) SetTrips(trips []Trip) {
 trips := ...
 d1.SetTrips(trips)
 
-// Did you mean to modify d1.trips?
+// 这样赋值会影响到 d1.trips
 trips[0] = ...
 ```
 
@@ -387,7 +387,7 @@ func (d *Driver) SetTrips(trips []Trip) {
 trips := ...
 d1.SetTrips(trips)
 
-// We can now modify trips[0] without affecting d1.trips.
+// 这样赋值不会影响 d1.trips(因为 SetTrips 内部有copy).
 trips[0] = ...
 ```
 
@@ -397,10 +397,9 @@ trips[0] = ...
 </tbody>
 </table>
 
-#### Returning Slices and Maps
+#### 返回 Slices 和 Maps
 
-Similarly, be wary of user modifications to maps or slices exposing internal
-state.
+同样，请注意用户对 maps 或 slices 的修改暴露了内部状态。
 
 <table>
 <thead><tr><th>Bad</th><th>Good</th></tr></thead>
@@ -413,7 +412,7 @@ type Stats struct {
   counters map[string]int
 }
 
-// Snapshot returns the current stats.
+// Snapshot 返回当前的 stats.
 func (s *Stats) Snapshot() map[string]int {
   s.mu.Lock()
   defer s.mu.Unlock()
@@ -421,8 +420,7 @@ func (s *Stats) Snapshot() map[string]int {
   return s.counters
 }
 
-// snapshot is no longer protected by the mutex, so any
-// access to the snapshot is subject to data races.
+// snapshot 变量不在受 mutex锁保护，任何对 snapshot 的访问会受数据竟态的影响
 snapshot := stats.Snapshot()
 ```
 
@@ -445,16 +443,16 @@ func (s *Stats) Snapshot() map[string]int {
   return result
 }
 
-// Snapshot is now a copy.
+// snapshot 现在只是个copy。
 snapshot := stats.Snapshot()
 ```
 
 </td></tr>
 </tbody></table>
 
-### Defer to Clean Up
+### 使用 Defer 释放资源
 
-Use defer to clean up resources such as files and locks.
+在读写文件、使用锁时，使用 defer 释放资源
 
 <table>
 <thead><tr><th>Bad</th><th>Good</th></tr></thead>
@@ -474,7 +472,7 @@ p.Unlock()
 
 return newCount
 
-// easy to miss unlocks due to multiple returns
+// 当有多分支 return 时，很容易漏写Unlock().
 ```
 
 </td><td>
@@ -490,25 +488,21 @@ if p.count < 10 {
 p.count++
 return p.count
 
-// more readable
+// 使用defer在一个地方 Unlock, 代码可读性更好
 ```
 
 </td></tr>
 </tbody></table>
 
-Defer has an extremely small overhead and should be avoided only if you can
-prove that your function execution time is in the order of nanoseconds. The
-readability win of using defers is worth the miniscule cost of using them. This
-is especially true for larger methods that have more than simple memory
-accesses, where the other computations are more significant than the `defer`.
+调用 defer 的性能开销非常小，但如果你需要纳秒级别的函数调用，那可能需要避免使用 defer。
+使用 defer 带来的可读性 胜过引入其它带来的性能开销。defer 尤其适用于适用于那些不仅是内存
+放在的行数较多、逻辑较为复杂的大方法，这些方法中其他代码逻辑的执行成本比 defer 执行成本更大。
 
-### Channel Size is One or None
+### Channel 大小应为 0 或 1
 
-Channels should usually have a size of one or be unbuffered. By default,
-channels are unbuffered and have a size of zero. Any other size
-must be subject to a high level of scrutiny. Consider how the size is
-determined, what prevents the channel from filling up under load and blocking
-writers, and what happens when this occurs.
+Channels 的大小应该是1或无缓冲的。默认情况下，channels 是无缓冲的，size为0。其他size需经过严格的审查。
+考虑 channel 的size 是如何定义的，是什么造成了 channel 在负荷情况下被写满而无法写入，以及无法写入会发生什么。
+ 
 
 <table>
 <thead><tr><th>Bad</th><th>Good</th></tr></thead>
@@ -516,27 +510,25 @@ writers, and what happens when this occurs.
 <tr><td>
 
 ```go
-// Ought to be enough for anybody!
+// 这个 size 对任何操作都够了！
 c := make(chan int, 64)
 ```
 
 </td><td>
 
 ```go
-// Size of one
+// Size 是1
 c := make(chan int, 1) // or
-// Unbuffered channel, size of zero
+// 无缓冲 channel
 c := make(chan int)
 ```
 
 </td></tr>
 </tbody></table>
 
-### Start Enums at One
+### 枚举类型值从1开始
 
-The standard way of introducing enumerations in Go is to declare a custom type
-and a `const` group with `iota`. Since variables have a 0 default value, you
-should usually start your enums on a non-zero value.
+在Go中声明枚举值的标准方法是使用`const`包`iota`。由于变量的默认值为0，因此枚举类型的值需要从1开始。
 
 <table>
 <thead><tr><th>Bad</th><th>Good</th></tr></thead>
@@ -572,8 +564,7 @@ const (
 </td></tr>
 </tbody></table>
 
-There are cases where using the zero value makes sense, for example when the
-zero value case is the desirable default behavior.
+当你需要将0值视为默认行为时，枚举类型从0开始是有意义的。
 
 ```go
 type LogOutput int
@@ -587,29 +578,25 @@ const (
 // LogToStdout=0, LogToFile=1, LogToRemote=2
 ```
 
-### Use `"time"` to handle time
+### 使用 `"time"` 包来处理时间
 
-Time is complicated. Incorrect assumptions often made about time include the
-following.
+时间处理很复杂，关于时间错误预估有以下这些点。
 
-1. A day has 24 hours
-2. An hour has 60 minutes
-3. A week has 7 days
-4. A year has 365 days
-5. [And a lot more](https://infiniteundo.com/post/25326999628/falsehoods-programmers-believe-about-time)
+1. 一天有24小时
+2. 一小时有60分钟
+3. 一周有7天
+4. 一年有365天 
+5. [其他易错点](https://infiniteundo.com/post/25326999628/falsehoods-programmers-believe-about-time)
 
-For example, *1* means that adding 24 hours to a time instant will not always
-yield a new calendar day.
+举例来说, *1* 表示在一个时间点加上24小时并不一定会产生新的一天。
 
-Therefore, always use the [`"time"`] package when dealing with time because it
-helps deal with these incorrect assumptions in a safer, more accurate manner.
+因此，在处理时间时应始终使用`"time"`包，因为它会用更安全、准确的方式来处理这些不正确的假设。
 
 [`"time"`]: https://golang.org/pkg/time/
 
-#### Use `time.Time` for instants of time
+#### 用 `time.Time` 表示瞬时时间
 
-Use [`time.Time`] when dealing with instants of time, and the methods on
-`time.Time` when comparing, adding, or subtracting time.
+需要瞬时时间语义时，使用[`time.Time`] ，在进行比较、增加或减少时间段时，使用`time.Time`包里的方法。
 
 [`time.Time`]: https://golang.org/pkg/time/#Time
 
@@ -635,9 +622,9 @@ func isActive(now, start, stop time.Time) bool {
 </td></tr>
 </tbody></table>
 
-#### Use `time.Duration` for periods of time
+#### 用 `time.Duration` 表示时间段
 
-Use [`time.Duration`] when dealing with periods of time.
+应使用 [`time.Duration`] 来表示时间段
 
 [`time.Duration`]: https://golang.org/pkg/time/#Duration
 
@@ -654,20 +641,20 @@ func poll(delay int) {
   }
 }
 
-poll(10) // was it seconds or milliseconds?
+poll(10) // 这里单位是秒还是毫秒
 ```
 
 </td><td>
 
 ```go
-func poll(delay time.Duration) {
+func poll(delay time.Duration) { // 使用 time.Duration 表示时间段
   for {
     // ...
     time.Sleep(delay)
   }
 }
 
-poll(10*time.Second)
+poll(10*time.Second) // 明确单位
 ```
 
 </td></tr>
