@@ -7,16 +7,16 @@
 
 - [介绍](#介绍)
 - [指南](#指南)
-    - [Pointers to Interfaces](#pointers-to-interfaces)
-    - [Verify Interface Compliance](#verify-interface-compliance)
-    - [Receivers and Interfaces](#receivers-and-interfaces)
-    - [Zero-value Mutexes are Valid](#zero-value-mutexes-are-valid)
-    - [Copy Slices and Maps at Boundaries](#copy-slices-and-maps-at-boundaries)
+    - [指针转换为interface](#指针转换为interface)
+    - [验证接口合法性](#验证接口合法性)
+    - [接收者和接口](#接收者和接口)
+    - [Mutexes的零值是有效的](#Mutexes的零值是有效的)
+    - [在边界拷贝 Slices 和 Maps](#在边界拷贝 Slices 和 Maps)
     - [Defer to Clean Up](#defer-to-clean-up)
-    - [Channel Size is One or None](#channel-size-is-one-or-none)
+    - [Channel大小应为0或1](#Channel大小应为0或1)
     - [Start Enums at One](#start-enums-at-one)
-    - [Use `"time"` to handle time](#use-time-to-handle-time)
-    - [Errors](#errors)
+    - [使用time包来处理时间](#使用 time 包来处理时间)
+    - [错误](#错误)
         - [Error Types](#error-types)
         - [Error Wrapping](#error-wrapping)
         - [Error Naming](#error-naming)
@@ -737,39 +737,33 @@ type Config struct { // Millis 是单位
 
 #### 错误类型
 
-There are few options for declaring errors.
-Consider the following before picking the option best suited for your use case.
+声明错误的选项很少。 在为你的代码选择合适的用例之前，考虑这些事项：
 
-- Does the caller need to match the error so that they can handle it?
-  If yes, we must support the [`errors.Is`] or [`errors.As`] functions
-  by declaring a top-level error variable or a custom type.
-- Is the error message a static string,
-  or is it a dynamic string that requires contextual information?
-  For the former, we can use [`errors.New`], but for the latter we must
-  use [`fmt.Errorf`] or a custom error type.
-- Are we propagating a new error returned by a downstream function?
-  If so, see the [section on error wrapping](#error-wrapping).
+- 调用方需要匹配错误吗，还是调用方需要自己处理错误。如果需要匹配错误，那应该声明顶级
+  错误类型或自定义类型 来让 [`errors.Is`] 或 [`errors.As`] 匹配。
+- 错误信息是静态字符串吗，还是说错误信息是需要上下文的动态字符串。如果是静态字符串，
+  我们可以使用 [`errors.New`]，如果是动态字符串，我们应该使用[`fmt.Errorf`]来
+  自定义错误类型。
+- 我们是否正在传递由下游返回的新的错误类型，如果是这样，参考[section on error wrapping](#error-wrapping).
 
 [`errors.Is`]: https://golang.org/pkg/errors/#Is
 [`errors.As`]: https://golang.org/pkg/errors/#As
 
-| Error matching? | Error Message | Guidance                            |
-|-----------------|---------------|-------------------------------------|
-| No              | static        | [`errors.New`]                      |
-| No              | dynamic       | [`fmt.Errorf`]                      |
-| Yes             | static        | top-level `var` with [`errors.New`] |
-| Yes             | dynamic       | custom `error` type                 |
+| 错误匹配? | 错误信息 | 使用                       |
+|-------|------|--------------------------|
+| 无     | 静态   | [`errors.New`]           |
+| 无     | 动态   | [`fmt.Errorf`]           |
+| 有     | 静态   | 用[`errors.New`]声明顶级错误类型  |
+| 有     | 动态   | 定制 `error` 类型            |
 
 [`errors.New`]: https://golang.org/pkg/errors/#New
 [`fmt.Errorf`]: https://golang.org/pkg/fmt/#Errorf
 
-For example,
-use [`errors.New`] for an error with a static string.
-Export this error as a variable to support matching it with `errors.Is`
-if the caller needs to match and handle this error.
+举例，使用 [`errors.New`] 表示一个静态字符串错误。如果调用方需要匹配并处理这个错误，
+就把这个错误声明为变量来支持和 `errors.Is` 匹配。
 
 <table>
-<thead><tr><th>No error matching</th><th>Error matching</th></tr></thead>
+<thead><tr><th>无错误匹配</th><th>含有错误匹配</th></tr></thead>
 <tbody>
 <tr><td>
 
@@ -783,7 +777,7 @@ func Open() error {
 // package bar
 
 if err := foo.Open(); err != nil {
-  // Can't handle the error.
+  //无法处理错误
   panic("unknown error")
 }
 ```
@@ -803,7 +797,7 @@ func Open() error {
 
 if err := foo.Open(); err != nil {
   if errors.Is(err, foo.ErrCouldNotOpen) {
-    // handle the error
+    // 处理这个错误
   } else {
     panic("unknown error")
   }
@@ -1007,10 +1001,9 @@ func (e *resolveError) Error() string {
 }
 ```
 
-### Handle Type Assertion Failures
+### 处理断言失败
 
-The single return value form of a [type assertion] will panic on an incorrect
-type. Therefore, always use the "comma ok" idiom.
+在不正确的类型断言上 使用单返回值来处理会导致 panic, 因此请使用 "comma ok" 习俗.
 
 [type assertion]: https://golang.org/ref/spec#Type_assertions
 
@@ -1028,7 +1021,7 @@ t := i.(string)
 ```go
 t, ok := i.(string)
 if !ok {
-  // handle the error gracefully
+  // 在这里优雅处理错误
 }
 ```
 
@@ -1038,11 +1031,10 @@ if !ok {
 <!-- TODO: There are a few situations where the single assignment form is
 fine. -->
 
-### Don't Panic
+### 不要使用 Panic
 
-Code running in production must avoid panics. Panics are a major source of
-[cascading failures]. If an error occurs, the function must return an error and
-allow the caller to decide how to handle it.
+在生产环境的业务代码避免使用panic。Panics 是级联问题[cascading failures]的主要来源。
+如果发生错误，函数必须返回错误，让调用方决定如何处理这种情况。
 
 [cascading failures]: https://en.wikipedia.org/wiki/Cascading_failure
 
@@ -1128,7 +1120,7 @@ if err != nil {
 
 <!-- TODO: Explain how to use _test packages. -->
 
-### Use go.uber.org/atomic
+### 使用 go.uber.org/atomic
 
 Atomic operations with the [sync/atomic] package operate on the raw types
 (`int32`, `int64`, etc.) so it is easy to forget to use the atomic operation to
@@ -1186,7 +1178,7 @@ func (f *foo) isRunning() bool {
 </td></tr>
 </tbody></table>
 
-### Avoid Mutable Globals
+### 避免使用全局可变对象
 
 Avoid mutating global variables, instead opting for dependency injection.
 This applies to function pointers as well as other kinds of values.
@@ -1262,7 +1254,7 @@ func TestSigner(t *testing.T) {
 </td></tr>
 </tbody></table>
 
-### Avoid Embedding Types in Public Structs
+### 避免在公共结构体中内嵌类型
 
 These embedded types leak implementation details, inhibit type evolution, and
 obscure documentation.
