@@ -660,11 +660,9 @@ poll(10*time.Second) // 明确单位
 </td></tr>
 </tbody></table>
 
-Going back to the example of adding 24 hours to a time instant, the method we
-use to add time depends on intent. If we want the same time of the day, but on
-the next calendar day, we should use [`Time.AddDate`]. However, if we want an
-instant of time guaranteed to be 24 hours after the previous time, we should
-use [`Time.Add`].
+回到刚刚的例子，在一个瞬时时间加上24小时，怎么加这个 "24小时" 取决于我们的意图。如果我们想获取
+下一天的当前时间，我们应该使用 [`Time.AddDate`]。如果我们想获取比当前时间晚24小时的瞬时时间，
+我们应该应该使用 [`Time.Add`]。
 
 [`Time.AddDate`]: https://golang.org/pkg/time/#Time.AddDate
 [`Time.Add`]: https://golang.org/pkg/time/#Time.Add
@@ -674,19 +672,14 @@ newDay := t.AddDate(0 /* years */, 0 /* months */, 1 /* days */)
 maybeNewDay := t.Add(24 * time.Hour)
 ```
 
-#### Use `time.Time` and `time.Duration` with external systems
+#### 对外交互 使用 `time.Time` 和 `time.Duration` 
 
-Use `time.Duration` and `time.Time` in interactions with external systems when
-possible. For example:
+在对外交互时尽可能使用 `time.Duration` 和 `time.Time`，例如：
 
-- Command-line flags: [`flag`] supports `time.Duration` via
-  [`time.ParseDuration`]
-- JSON: [`encoding/json`] supports encoding `time.Time` as an [RFC 3339]
-  string via its [`UnmarshalJSON` method]
-- SQL: [`database/sql`] supports converting `DATETIME` or `TIMESTAMP` columns
-  into `time.Time` and back if the underlying driver supports it
-- YAML: [`gopkg.in/yaml.v2`] supports `time.Time` as an [RFC 3339] string, and
-  `time.Duration` via [`time.ParseDuration`].
+- Command-line 标记: [`flag`] 通过支持 [`time.ParseDuration`] 来支持 `time.Duration`
+- JSON: [`encoding/json`] 通过  [`UnmarshalJSON` 方法] 支持把 `time.Time` 解码为 [RFC 3339] 字符串
+- SQL: [`database/sql`] 支持把 `DATETIME` 或 `TIMESTAMP` 类型转化为 `time.Time` 
+- YAML: [`gopkg.in/yaml.v2`] 支持把 `time.Time` 作为一个 [RFC 3339] 字符串, 通过支持[`time.ParseDuration`] 来支持`time.Duration`。
 
   [`flag`]: https://golang.org/pkg/flag/
   [`time.ParseDuration`]: https://golang.org/pkg/time/#ParseDuration
@@ -696,11 +689,10 @@ possible. For example:
   [`database/sql`]: https://golang.org/pkg/database/sql/
   [`gopkg.in/yaml.v2`]: https://godoc.org/gopkg.in/yaml.v2
 
-When it is not possible to use `time.Duration` in these interactions, use
-`int` or `float64` and include the unit in the name of the field.
 
-For example, since `encoding/json` does not support `time.Duration`, the unit
-is included in the name of the field.
+如果交互中不支持使用`time.Duration`，那字段名中应包含单位，类型应为`int`或`float64`。
+
+例如, 由于 `encoding/json` 不支持 `time.Duration` 类型, 因此字段名中应包含时间单位。
 
 <table>
 <thead><tr><th>Bad</th><th>Good</th></tr></thead>
@@ -718,7 +710,7 @@ type Config struct {
 
 ```go
 // {"intervalMillis": 2000}
-type Config struct {
+type Config struct { // Millis 是单位
   IntervalMillis int `json:"intervalMillis"`
 }
 ```
@@ -726,28 +718,24 @@ type Config struct {
 </td></tr>
 </tbody></table>
 
-When it is not possible to use `time.Time` in these interactions, unless an
-alternative is agreed upon, use `string` and format timestamps as defined in
-[RFC 3339]. This format is used by default by [`Time.UnmarshalText`] and is
-available for use in `Time.Format` and `time.Parse` via [`time.RFC3339`].
+如果在交互中不能使用 `time.Time`，除非有额外约定，否则应该使用 `string` 和 [RFC 3339]定义的
+时间戳格式。默认情况下， [`Time.UnmarshalText`] 使用这种格式，并可以通过[`time.RFC3339`]在
+`Time.Format` 和 `time.Parse` 中使用。
 
 [`Time.UnmarshalText`]: https://golang.org/pkg/time/#Time.UnmarshalText
 [`time.RFC3339`]: https://golang.org/pkg/time/#RFC3339
 
-Although this tends to not be a problem in practice, keep in mind that the
-`"time"` package does not support parsing timestamps with leap seconds
-([8728]), nor does it account for leap seconds in calculations ([15190]). If
-you compare two instants of time, the difference will not include the leap
-seconds that may have occurred between those two instants.
+尽管在实践中这不是什么问题，但是你需要记住`"time"`不能解析闰秒时间戳([8728]),在计算中也不考虑闰秒([15190])。
+因此如果你要比较两个瞬时时间，比较结果不会包含这两个瞬时时间可能会出现的闰秒。
 
 [8728]: https://github.com/golang/go/issues/8728
 [15190]: https://github.com/golang/go/issues/15190
 
 <!-- TODO: section on String methods for enums -->
 
-### Errors
+### 错误
 
-#### Error Types
+#### 错误类型
 
 There are few options for declaring errors.
 Consider the following before picking the option best suited for your use case.
