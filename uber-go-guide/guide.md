@@ -11,11 +11,11 @@
     - [验证接口合法性](#验证接口合法性)
     - [接收者和接口](#接收者和接口)
     - [Mutexes的零值是有效的](#Mutexes的零值是有效的)
-    - [在边界拷贝 Slices 和 Maps](#在边界拷贝 Slices 和 Maps)
-    - [Defer to Clean Up](#defer-to-clean-up)
+    - [在边界拷贝Slices和Maps](#在边界拷贝Slices和Maps)
+    - [使用Defer释放资源](#使用Defer释放资源)
     - [Channel大小应为0或1](#Channel大小应为0或1)
     - [Start Enums at One](#start-enums-at-one)
-    - [使用time包来处理时间](#使用 time 包来处理时间)
+    - [使用time包来处理时间](#使用time包来处理时间)
     - [错误](#错误)
         - [Error Types](#error-types)
         - [Error Wrapping](#error-wrapping)
@@ -349,7 +349,7 @@ mutex和它`SMap`方法的实现细节对调用方屏蔽。
 </td></tr>
 </tbody></table>
 
-### 在边界拷贝 Slices 和 Maps
+### 在边界拷贝Slices和Maps
 
 slice 和 map 类型包含指向data数据的指针，所以当你需要复制时应格外注意。
 
@@ -450,7 +450,7 @@ snapshot := stats.Snapshot()
 </td></tr>
 </tbody></table>
 
-### 使用 Defer 释放资源
+### 使用Defer释放资源
 
 在读写文件、使用锁时，使用 defer 释放资源
 
@@ -578,7 +578,7 @@ const (
 // LogToStdout=0, LogToFile=1, LogToRemote=2
 ```
 
-### 使用 `"time"` 包来处理时间
+### 使用time包来处理时间
 
 时间处理很复杂，关于时间错误预估有以下这些点。
 
@@ -1091,6 +1091,7 @@ if err != nil {
 
 ### 使用 go.uber.org/atomic
 
+使用 [sync/atomic] 包的原子操作
 Atomic operations with the [sync/atomic] package operate on the raw types
 (`int32`, `int64`, etc.) so it is easy to forget to use the atomic operation to
 read or modify the variables.
