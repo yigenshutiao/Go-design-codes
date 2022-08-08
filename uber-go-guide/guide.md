@@ -17,11 +17,11 @@
     - [Start Enums at One](#start-enums-at-one)
     - [使用time包来处理时间](#使用time包来处理时间)
     - [错误](#错误)
-        - [Error Types](#error-types)
-        - [Error Wrapping](#error-wrapping)
-        - [Error Naming](#error-naming)
-    - [Handle Type Assertion Failures](#handle-type-assertion-failures)
-    - [Don't Panic](#dont-panic)
+        - [错误类型](#错误类型)
+        - [错误包装](#错误包装)
+        - [错误命名](#错误命名)
+    - [处理断言失败](#处理断言失败)
+    - [不要使用Panic](#不要使用Panic)
     - [Use go.uber.org/atomic](#use-gouberorgatomic)
     - [Avoid Mutable Globals](#avoid-mutable-globals)
     - [Avoid Embedding Types in Public Structs](#avoid-embedding-types-in-public-structs)
@@ -1003,7 +1003,7 @@ if !ok {
 <!-- TODO: There are a few situations where the single assignment form is
 fine. -->
 
-### 不要使用 Panic
+### 不要使用Panic
 
 在生产环境的业务代码避免使用panic。Panics 是级联问题[cascading failures]的主要来源。
 如果发生错误，函数必须返回错误，让调用方决定如何处理这种情况。
