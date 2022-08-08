@@ -763,7 +763,7 @@ type Config struct { // Millis 是单位
 就把这个错误声明为变量来支持和 `errors.Is` 匹配。
 
 <table>
-<thead><tr><th>无错误匹配</th><th>含有错误匹配</th></tr></thead>
+<thead><tr><th>无错误匹配</th><th>有错误匹配</th></tr></thead>
 <tbody>
 <tr><td>
 
@@ -807,12 +807,10 @@ if err := foo.Open(); err != nil {
 </td></tr>
 </tbody></table>
 
-For an error with a dynamic string,
-use [`fmt.Errorf`] if the caller does not need to match it,
-and a custom `error` if the caller does need to match it.
+对于动态字符串的错误，如果调用方不需要匹配就是用[`fmt.Errorf`]，需要匹配就搞一个自定义`error`。
 
 <table>
-<thead><tr><th>No error matching</th><th>Error matching</th></tr></thead>
+<thead><tr><th>无错误匹配</th><th>有错误匹配</th></tr></thead>
 <tbody>
 <tr><td>
 
@@ -864,43 +862,31 @@ if err := foo.Open("testfile.txt"); err != nil {
 </td></tr>
 </tbody></table>
 
-Note that if you export error variables or types from a package,
-they will become part of the public API of the package.
+注意，如果你的包里导出了错误变量或错误类型，那这个错误将变成你包里公共API的一部分。
 
-#### Error Wrapping
+#### 错误包装
 
-There are three main options for propagating errors if a call fails:
+调用函数失败时，有三种选择供你选择：
 
-- return the original error as-is
-- add context with `fmt.Errorf` and the `%w` verb
-- add context with `fmt.Errorf` and the `%v` verb
+- 返回原始错误
+- 用 `fmt.Errorf` 和 `%w` 包装上下文信息
+- 用 `fmt.Errorf` 和 `%v` 包装上下文信息
 
-Return the original error as-is if there is no additional context to add.
-This maintains the original error type and message.
-This is well suited for cases when the underlying error message
-has sufficient information to track down where it came from.
+返回原始错误不会附加上下文信息，这样就保持了原始错误类型和信息。比较适用于lib库类型代码
+展示底层错误信息。
 
-Otherwise, add context to the error message where possible
-so that instead of a vague error such as "connection refused",
-you get more useful errors such as "call service foo: connection refused".
+如果不是lib库，就需要增加所需的上下文信息，不然就会出现 "connection refused" 这样非常
+模糊的错误，理论上应该添加上下文，来得到这样的报错信息："call service foo: connection refused"。
 
-Use `fmt.Errorf` to add context to your errors,
-picking between the `%w` or `%v` verbs
-based on whether the caller should be able to
-match and extract the underlying cause.
+在错误类型上使用 `fmt.Errorf` 来添加上下文信息，根据调用方不同的使用方式，可以选择 `%w` 或 `%v` 动词。
 
-- Use `%w` if the caller should have access to the underlying error.
-  This is a good default for most wrapped errors,
-  but be aware that callers may begin to rely on this behavior.
-  So for cases where the wrapped error is a known `var` or type,
-  document and test it as part of your function's contract.
-- Use `%v` to obfuscate the underlying error.
-  Callers will be unable to match it,
-  but you can switch to `%w` in the future if needed.
+- 如果调用方需要访问底层错误，使用`%w`动词，这是一个用来包装错误的动词，如果你在代码中使用到了它，请注意
+  调用方会对此产生依赖，所以当你的包装的错误是用`var`声明的已知类型，需要在你的代码里对其进行测试。
+- 使用 `%v` 会混淆你的底层错误类型，调用方将无法进行匹配，如果有匹配需求，应该使用`%w`动词。
 
-When adding context to returned errors, keep the context succinct by avoiding
-phrases like "failed to", which state the obvious and pile up as the error
-percolates up through the stack:
+
+当为返回错误增加上下文信息时，避免在上下文中增加像 "failed to" 这样的没啥用的短语，这样没用的短语在错误
+堆栈中堆积起来的话，反而不利于你定位bug。
 
 <table>
 <thead><tr><th>Bad</th><th>Good</th></tr></thead>
@@ -940,45 +926,32 @@ x: y: new store: the error
 </td></tr>
 </tbody></table>
 
-However once the error is sent to another system, it should be clear the
-message is an error (e.g. an `err` tag or "Failed" prefix in logs).
+然而当你的错误传给别的系统时，错误信息应该足够清晰。(比如, 错误信息在日志中以 "Failed" 开头) 
 
-See also [Don't just check errors, handle them gracefully].
+其他参考信息： [Don't just check errors, handle them gracefully].
 
 [`"pkg/errors".Cause`]: https://godoc.org/github.com/pkg/errors#Cause
 [Don't just check errors, handle them gracefully]: https://dave.cheney.net/2016/04/27/dont-just-check-errors-handle-them-gracefully
 
-#### Error Naming
+#### 错误命名
 
-For error values stored as global variables,
-use the prefix `Err` or `err` depending on whether they're exported.
-This guidance supersedes the [Prefix Unexported Globals with _](#prefix-unexported-globals-with-_).
+对于全局变量类型，根据是否导出使用  `Err` 或 `err` 前缀。 详情参考：[Prefix Unexported Globals with _](#prefix-unexported-globals-with-_).
 
 ```go
 var (
-  // The following two errors are exported
-  // so that users of this package can match them
-  // with errors.Is.
-
+  // 以下两个错误是导出类型，所以他们的命名以 Err 作为开头，用户可以使用 errors.Is 来匹配错误类型
   ErrBrokenLink = errors.New("link is broken")
   ErrCouldNotOpen = errors.New("could not open")
 
-  // This error is not exported because
-  // we don't want to make it part of our public API.
-  // We may still use it inside the package
-  // with errors.Is.
-
+  // 这个错误是非导出类型，不会作为我们公共API的一部分，但是你可以在包内使用errors.Is匹配它。
   errNotFound = errors.New("not found")
 )
 ```
 
-For custom error types, use the suffix `Error` instead.
+对于自定义错误类型，请使用`Error`后缀。
 
 ```go
-// Similarly, this error is exported
-// so that users of this package can match it
-// with errors.As.
-
+// 这个错误是被导出的，用户可以使用errors.As去匹配它。
 type NotFoundError struct {
   File string
 }
@@ -987,10 +960,7 @@ func (e *NotFoundError) Error() string {
   return fmt.Sprintf("file %q not found", e.File)
 }
 
-// And this error is not exported because
-// we don't want to make it part of the public API.
-// We can still use it inside the package
-// with errors.As.
+// 这个错误是非导出类型，不会作为我们公共API的一部分，但是你可以在包内使用errors.As匹配它。 
 
 type resolveError struct {
   Path string
@@ -1000,6 +970,8 @@ func (e *resolveError) Error() string {
   return fmt.Sprintf("resolve %q", e.Path)
 }
 ```
+
+todo： errors.Is和errors.As的区别
 
 ### 处理断言失败
 
@@ -1078,17 +1050,14 @@ func main() {
 </td></tr>
 </tbody></table>
 
-Panic/recover is not an error handling strategy. A program must panic only when
-something irrecoverable happens such as a nil dereference. An exception to this is
-program initialization: bad things at program startup that should abort the
-program may cause panic.
+Panic/recover 不是错误处理策略。当系统发生像空指针异常这种 不可恢复的 Fatal 异常时，才需要使用Panic。
+唯一的意外情况是项目启动：如果程序启动阶段出现问题需要抛出异常。
 
 ```go
 var _statusTemplate = template.Must(template.New("name").Parse("_statusHTML"))
 ```
 
-Even in tests, prefer `t.Fatal` or `t.FailNow` over panics to ensure that the
-test is marked as failed.
+即使在测试中，优先使用`t.Fatal` 或 `t.FailNow` 而不是异常，来确保失败情况被记录。
 
 <table>
 <thead><tr><th>Bad</th><th>Good</th></tr></thead>
@@ -1482,7 +1451,7 @@ Note that the compiler will not generate errors when using predeclared
 identifiers, but tools such as `go vet` should correctly point out these and
 other cases of shadowing.
 
-### Avoid `init()`
+### 避免使用 `init()`
 
 Avoid `init()` where possible. When `init()` is unavoidable or desirable, code
 should attempt to:
@@ -1802,14 +1771,13 @@ this contract. Specifying field names inside tags makes the contract explicit,
 and it guards against accidentally breaking the contract by refactoring or
 renaming fields.
 
-## Performance
+## 性能
 
-Performance-specific guidelines apply only to the hot path.
+性能方面的指导准则只适用于高频调用场景。
 
-### Prefer strconv over fmt
+### 使用 strconv 而不是 fmt
 
-When converting primitives to/from strings, `strconv` is faster than
-`fmt`.
+当需要原始类型和字符串互相转化时，`strconv`比`fmt`性能更好。
 
 <table>
 <thead><tr><th>Bad</th><th>Good</th></tr></thead>
@@ -1846,10 +1814,9 @@ BenchmarkStrconv-4    64.2 ns/op    1 allocs/op
 </td></tr>
 </tbody></table>
 
-### Avoid string-to-byte conversion
+### 避免 字符串到字节的转化
 
-Do not create byte slices from a fixed string repeatedly. Instead, perform the
-conversion once and capture the result.
+不要在for循环中创建[]byte类型，应该在for循环开始前把[]byte数据准备好。
 
 <table>
 <thead><tr><th>Bad</th><th>Good</th></tr></thead>
@@ -1887,7 +1854,7 @@ BenchmarkGood-4  500000000   3.25 ns/op
 </td></tr>
 </tbody></table>
 
-### Prefer Specifying Container Capacity
+### 预先指定容器类型的容量
 
 Specify container capacity where possible in order to allocate memory for the
 container up front. This minimizes subsequent allocations (by copying and
