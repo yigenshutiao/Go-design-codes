@@ -1226,14 +1226,10 @@ func TestSigner(t *testing.T) {
 
 ### 避免在公共结构体中内嵌类型
 
-These embedded types leak implementation details, inhibit type evolution, and
-obscure documentation.
+嵌入类型会暴露实现细节，无法类型演化，让文档也变得模糊。
 
-Assuming you have implemented a variety of list types using a shared
-`AbstractList`, avoid embedding the `AbstractList` in your concrete list
-implementations.
-Instead, hand-write only the methods to your concrete list that will delegate
-to the abstract list.
+假设你用`AbstractList`结构体实现了公共的 list 方法，避免在其他实现中内嵌`AbstractList`类型。
+而是应该在其他结构体中显式声明list，并在方法实现中调用list的方法。
 
 ```go
 type AbstractList struct {}
@@ -1283,24 +1279,17 @@ func (l *ConcreteList) Remove(e Entity) {
 </td></tr>
 </tbody></table>
 
-Go allows [type embedding] as a compromise between inheritance and composition.
-The outer type gets implicit copies of the embedded type's methods.
-These methods, by default, delegate to the same method of the embedded
-instance.
+Go允许内嵌类型[type embedding]作为组合和继承的折中方案。外部的结构体会获得内嵌类型的隐式拷贝。默认情况下，内嵌类型的方法会嵌入实例的同一方法。
 
 [type embedding]: https://golang.org/doc/effective_go.html#embedding
 
-The struct also gains a field by the same name as the type.
-So, if the embedded type is public, the field is public.
-To maintain backward compatibility, every future version of the outer type must
-keep the embedded type.
+外部的结构体会获取嵌入类型的同名字段。如果嵌入类型的字段是公开(public)的，那嵌入后也是公开的。
+为保证向后兼容性，外部结构体未来每个版本都需要保留嵌入类型。
 
-An embedded type is rarely necessary.
-It is a convenience that helps you avoid writing tedious delegate methods.
+很少场景需要嵌入类型，虽然嵌入类型很方便，让你避免编写冗长的方法。
 
-Even embedding a compatible AbstractList *interface*, instead of the struct,
-would offer the developer more flexibility to change in the future, but still
-leak the detail that the concrete lists use an abstract implementation.
+即使是用interface而不是结构体来嵌入方法，这是给开发人员带来了一定的灵活性，但是仍然暴露了具体实现列表的抽象细节。
+
 
 <table>
 <thead><tr><th>Bad</th><th>Good</th></tr></thead>
@@ -1343,29 +1332,22 @@ func (l *ConcreteList) Remove(e Entity) {
 </td></tr>
 </tbody></table>
 
-Either with an embedded struct or an embedded interface, the embedded type
-places limits on the evolution of the type.
+不管是嵌入结构体还是嵌入接口，都会限制类型的演化。
 
-- Adding methods to an embedded interface is a breaking change.
-- Removing methods from an embedded struct is a breaking change.
-- Removing the embedded type is a breaking change.
-- Replacing the embedded type, even with an alternative that satisfies the same
-  interface, is a breaking change.
+- 若嵌入接口，当你增加一个方法是一种破坏性改变
+- 若嵌入结构体，当你删除一个方法是一种破坏性改变
+- 删除嵌入类型是一种破坏性改变
+- 即使用满足接口约束的类型去替换嵌入类型，也是一种破坏性改变
 
-Although writing these delegate methods is tedious, the additional effort hides
-an implementation detail, leaves more opportunities for change, and also
-eliminates indirection for discovering the full List interface in
-documentation.
+尽管编写内嵌类型已实现的方法是乏味的。但是这些工作隐藏了实现细节，留下了更多更改的机会，
+并消除了在文档中发现完整List接口的间接方法。
 
-### Avoid Using Built-In Names
+### 避免使用内建命名
 
-The Go [language specification] outlines several built-in,
-[predeclared identifiers] that should not be used as names within Go programs.
+Go语言的spec中列举了一些内建命名，在你的Go程序中应该避免使用预声明的标识符；
 
-Depending on context, reusing these identifiers as names will either shadow
-the original within the current lexical scope (and any nested scopes) or make
-affected code confusing. In the best case, the compiler will complain; in the
-worst case, such code may introduce latent, hard-to-grep bugs.
+根据上下文的不同，用预声明标识符命名变量可能会在当前作用域下覆盖官方标识符，让你的代码变得难以理解。
+最好的情况下，编译器会直接报错，最糟糕的情况下，这样的代码会引入难以排查的bug。
 
 [language specification]: https://golang.org/ref/spec
 [predeclared identifiers]: https://golang.org/ref/spec#Predeclared_identifiers
@@ -1377,12 +1359,12 @@ worst case, such code may introduce latent, hard-to-grep bugs.
 
 ```go
 var error string
-// `error` shadows the builtin
+// `error` 覆盖了内建的error
 
 // or
 
 func handleErrorMessage(error string) {
-    // `error` shadows the builtin
+    // `error` 覆盖了内建的error
 }
 ```
 
@@ -1390,12 +1372,12 @@ func handleErrorMessage(error string) {
 
 ```go
 var errorMessage string
-// `error` refers to the builtin
+// `error` 指向内置的 error 
 
 // or
 
 func handleErrorMessage(msg string) {
-    // `error` refers to the builtin
+    // `error` 指向内置的 error
 }
 ```
 
@@ -1448,11 +1430,12 @@ func (f Foo) String() string {
 </tbody></table>
 
 
-Note that the compiler will not generate errors when using predeclared
-identifiers, but tools such as `go vet` should correctly point out these and
-other cases of shadowing.
+注意当你使用预声明标识符时编译器不会报错，但是像 `go vet` 这样的工具会告诉你标识符被覆盖的情况。
+
+
 
 ### 避免使用 `init()`
+
 
 Avoid `init()` where possible. When `init()` is unavoidable or desirable, code
 should attempt to:
