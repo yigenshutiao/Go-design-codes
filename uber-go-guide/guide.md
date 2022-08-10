@@ -24,9 +24,9 @@
     - [不要使用Panic](#不要使用Panic)
     - [Use go.uber.org/atomic](#use-gouberorgatomic)
     - [Avoid Mutable Globals](#avoid-mutable-globals)
-    - [Avoid Embedding Types in Public Structs](#avoid-embedding-types-in-public-structs)
-    - [Avoid Using Built-In Names](#avoid-using-built-in-names)
-    - [Avoid `init()`](#avoid-init)
+    - [避免在公共结构体中内嵌类型](#避免在公共结构体中内嵌类型)
+    - [避免使用内建命名](#避免使用内建命名)
+    - [避免使用init()](#避免使用init())
     - [Exit in Main](#exit-in-main)
         - [Exit Once](#exit-once)
     - [Use field tags in marshaled structs](#use-field-tags-in-marshaled-structs)
@@ -1433,28 +1433,18 @@ func (f Foo) String() string {
 注意当你使用预声明标识符时编译器不会报错，但是像 `go vet` 这样的工具会告诉你标识符被覆盖的情况。
 
 
+### 避免使用init()
 
-### 避免使用 `init()`
+尽可能避免使用`init()`。如果实在依赖 `init()`，可以使用以下方式：
 
+1. 不管程序环境或调用方式如何，初始化要完全确定。
+2. 避免依赖其他`init()`函数的顺序或者产生的结果。虽然`init()`顺序是明确的，但是代码可以更改。
+   `init()`函数之间的关系会让代码变得易错和脆弱。
+3. 避免读写全局变量、环境变量，比如机器信息、环境变量、工作目录，程序的参数和输入等等。
+4. 避免 I/O 操作，比如文件系统，网络和系统调用。
 
-Avoid `init()` where possible. When `init()` is unavoidable or desirable, code
-should attempt to:
-
-1. Be completely deterministic, regardless of program environment or invocation.
-2. Avoid depending on the ordering or side-effects of other `init()` functions.
-   While `init()` ordering is well-known, code can change, and thus
-   relationships between `init()` functions can make code brittle and
-   error-prone.
-3. Avoid accessing or manipulating global or environment state, such as machine
-   information, environment variables, working directory, program
-   arguments/inputs, etc.
-4. Avoid I/O, including both filesystem, network, and system calls.
-
-Code that cannot satisfy these requirements likely belongs as a helper to be
-called as part of `main()` (or elsewhere in a program's lifecycle), or be
-written as part of `main()` itself. In particular, libraries that are intended
-to be used by other programs should take special care to be completely
-deterministic and not perform "init magic".
+如果代码不能满足这些需求，那可能属于帮助代码，需要作为`main()`函数的一部分进行调用(或者封装初始化逻辑，让main
+函数去调用)。 需要注意的是，被其他模块依赖的代码应该完全指定初始化顺序的确定性，而不是依赖"初始化魔法"。
 
 <table>
 <thead><tr><th>Bad</th><th>Good</th></tr></thead>
@@ -1542,17 +1532,15 @@ func loadConfig() Config {
 </td></tr>
 </tbody></table>
 
-Considering the above, some situations in which `init()` may be preferable or
-necessary might include:
+但是在某些情况下，`init()`函数可能更具优势：
 
-- Complex expressions that cannot be represented as single assignments.
-- Pluggable hooks, such as `database/sql` dialects, encoding type registries, etc.
-- Optimizations to [Google Cloud Functions] and other forms of deterministic
-  precomputation.
+- 单个赋值语句中无法表示的复杂表达式
+- 插件钩子，比如 `database/sql`，编码信息注册表等
+- 对 [Google Cloud Functions] 和其他形式确定性预计算的优化
 
   [Google Cloud Functions]: https://cloud.google.com/functions/docs/bestpractices/tips#use_global_variables_to_reuse_objects_in_future_invocations
 
-### Exit in Main
+### 优雅退出主函数
 
 Go programs use [`os.Exit`] or [`log.Fatal*`] to exit immediately. (Panicking
 is not a good way to exit programs, please [don't panic](#dont-panic).)
