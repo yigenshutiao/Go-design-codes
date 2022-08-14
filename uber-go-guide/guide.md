@@ -1542,14 +1542,12 @@ func loadConfig() Config {
 
 ### 优雅退出主函数
 
-Go programs use [`os.Exit`] or [`log.Fatal*`] to exit immediately. (Panicking
-is not a good way to exit programs, please [don't panic](#dont-panic).)
+ Go程序使用[`os.Exit`] 或 [`log.Fatal*`]来立即退出。(Panic 不是优雅的程序退出方式，可以参考 [don't panic](#dont-panic))
 
 [`os.Exit`]: https://golang.org/pkg/os/#Exit
 [`log.Fatal*`]: https://golang.org/pkg/log/#Fatal
 
-Call one of `os.Exit` or `log.Fatal*` **only in `main()`**. All other
-functions should return errors to signal failure.
+应该只在`main()`函数里调用`os.Exit` 或 `log.Fatal*`函数。其他函数应该返回错误来表示失败，在`main`中进行退出。
 
 <table>
 <thead><tr><th>Bad</th><th>Good</th></tr></thead>
@@ -1606,25 +1604,19 @@ func readFile(path string) (string, error) {
 </td></tr>
 </tbody></table>
 
-Rationale: Programs with multiple functions that exit present a few issues:
+程序中多个函数都能退出的话会有一些问题：
 
-- Non-obvious control flow: Any function can exit the program so it becomes
-  difficult to reason about the control flow.
-- Difficult to test: A function that exits the program will also exit the test
-  calling it. This makes the function difficult to test and introduces risk of
-  skipping other tests that have not yet been run by `go test`.
-- Skipped cleanup: When a function exits the program, it skips function calls
-  enqueued with `defer` statements. This adds risk of skipping important
-  cleanup tasks.
+- 不明显的控制流：多个函数都能退出的话，找出程序的控制流会变得困难。
+- 测试困难：如果一个函数让程序退出，那它也会让测试退出。这样会让函数难以测试。而且可能会让`go text`
+  无法测试其他函数。
+- 跳过清理：当一个函数退出程序时，会跳过已经进入`defer`队列的函数调用。这样会增加跳过清理任务的风险。
 
-#### Exit Once
+#### 一次性退出
 
-If possible, prefer to call `os.Exit` or `log.Fatal` **at most once** in your
-`main()`. If there are multiple error scenarios that halt program execution,
-put that logic under a separate function and return errors from it.
+有条件的情况下，`main()`函数中最好只调用`os.Exit` 或 `log.Fatal` 一次。如果有多种错误情况会停止
+程序的执行，将这些错误放在一个独立的函数中，并返回错误，`main()`中处理错误并退出。
 
-This has the effect of shortening your `main()` function and putting all key
-business logic into a separate, testable function.
+把所有的关键逻辑放在一个独立的可测试的函数中，会让你的`main()`函数变得简短。
 
 <table>
 <thead><tr><th>Bad</th><th>Good</th></tr></thead>
@@ -1695,11 +1687,9 @@ func run() error {
 </td></tr>
 </tbody></table>
 
-### Use field tags in marshaled structs
+### 在序列化结构体中使用字段标签。
 
-Any struct field that is marshaled into JSON, YAML,
-or other formats that support tag-based field naming
-should be annotated with the relevant tag.
+要编码成JSON、YAML或其他支持tag格式的结构体字段应该用指定对应项tag标签进行注释。
 
 <table>
 <thead><tr><th>Bad</th><th>Good</th></tr></thead>
@@ -1737,11 +1727,8 @@ bytes, err := json.Marshal(Stock{
 </tbody></table>
 
 Rationale:
-The serialized form of the structure is a contract between different systems.
-Changes to the structure of the serialized form--including field names--break
-this contract. Specifying field names inside tags makes the contract explicit,
-and it guards against accidentally breaking the contract by refactoring or
-renaming fields.
+结构体的序列化方式是不同系统通信的契约。修改结构体的结构和字段会破坏这个契约。在结构体中声明tag
+可以防止重构结构体中意外违反约定。
 
 ## 性能
 
@@ -1828,27 +1815,21 @@ BenchmarkGood-4  500000000   3.25 ns/op
 
 ### 预先指定容器类型的容量
 
-Specify container capacity where possible in order to allocate memory for the
-container up front. This minimizes subsequent allocations (by copying and
-resizing of the container) as elements are added.
+尽可能指定容器类型变量的容量来预先分配容器类型所需的内存大小。这样可以预防由于后续由分配元素
+（由于拷贝或重新指定容器大小）而导致的内存分配。
 
-#### Specifying Map Capacity Hints
+#### 指定Map容量
 
-Where possible, provide capacity hints when initializing
-maps with `make()`.
+如果有可能，用make来初始化map类型，并指定map的大小。
 
 ```go
 make(map[T1]T2, hint)
 ```
 
-Providing a capacity hint to `make()` tries to right-size the
-map at initialization time, which reduces the need for growing
-the map and allocations as elements are added to the map.
+使用 `make()` 初始化map时，提供一个容量来执行size，这样会减少后续将给map添加元素时引起的内存分配。
 
-Note that, unlike slices, map capacity hints do not guarantee complete,
-preemptive allocation, but are used to approximate the number of hashmap buckets
-required. Consequently, allocations may still occur when adding elements to the
-map, even up to the specified capacity.
+注意，和 slice 不同，给map指定容量不意味着抢占式内存分配完成，而是会用于预估的哈希表内部 buckets。
+因此，当你给 map 添加元素，或者给 map 指定值时，仍有可能发生内存分配。
 
 <table>
 <thead><tr><th>Bad</th><th>Good</th></tr></thead>
@@ -1879,31 +1860,27 @@ for _, f := range files {
 </td></tr>
 <tr><td>
 
-`m` is created without a size hint; there may be more
-allocations at assignment time.
+`m` 没有指定内存大小，因此在运行期间可能会有更多的内存分配。
 
 </td><td>
 
-`m` is created with a size hint; there may be fewer
-allocations at assignment time.
+`m` 指定了内存大小，因此在运行期间可能会有较少的内存分配。
+
 
 </td></tr>
 </tbody></table>
 
-#### Specifying Slice Capacity
+#### 指定Slice容量
 
-Where possible, provide capacity hints when initializing slices with `make()`,
-particularly when appending.
+如果有可能的话，在使用`make()`初始化slice的时候提供容量大小，尤其是后面需要 append 操作时。
 
 ```go
 make([]T, length, capacity)
 ```
 
-Unlike maps, slice capacity is not a hint: the compiler will allocate enough
-memory for the capacity of the slice as provided to `make()`, which means that
-subsequent `append()` operations will incur zero allocations (until the length
-of the slice matches the capacity, after which any appends will require a resize
-to hold additional elements).
+和 map 不同，slice的容量不是一个提示：编译器会根据 `make()` 提供的容量信息申请足够的内存，
+这意味着后续的 `append()` 操作不会申请内存（除非slice的长度和容量相等，这样的话后续添加元素
+会申请内存来调整 slice 的大小）。
 
 <table>
 <thead><tr><th>Bad</th><th>Good</th></tr></thead>
@@ -1946,9 +1923,10 @@ BenchmarkGood-4   100000000    0.21s
 </td></tr>
 </tbody></table>
 
-## Style
+## 规范
 
-### Avoid overly long lines
+### 避免代码过长
+
 
 Avoid lines of code that require readers to scroll horizontally
 or turn their heads too much.
