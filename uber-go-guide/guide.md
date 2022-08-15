@@ -2398,12 +2398,9 @@ var _e error = F()
 
 ### 非导出变量使用_前缀
 
-Prefix unexported top-level `var`s and `const`s with `_` to make it clear when
-they are used that they are global symbols.
+对于非导出类型的变量，在用`var`s and `const`声明时加上`_`前缀，来表示他们是全局符号。
 
-Rationale: Top-level variables and constants have a package scope. Using a
-generic name makes it easy to accidentally use the wrong value in a different
-file.
+原因：顶层声明的变量作用域一般是包范围。用一个常见的名字可能会导致在其他包中被意外修改。
 
 <table>
 <thead><tr><th>Bad</th><th>Good</th></tr></thead>
@@ -2444,14 +2441,13 @@ const (
 </td></tr>
 </tbody></table>
 
-**Exception**: Unexported error values may use the prefix `err` without the underscore.
-See [Error Naming](#error-naming).
+**异常**：非导出的错误类型一般使用不带 `_` 的 `err` 前缀。参考
+[Error Naming](#error-naming).
 
-### Embedding in Structs
 
-Embedded types should be at the top of the field list of a
-struct, and there must be an empty line separating embedded fields from regular
-fields.
+### 结构体内嵌类型
+
+嵌入类型应该放在结构体的最上面，应该和结构体的常规字段用一个空行分隔开。
 
 <table>
 <thead><tr><th>Bad</th><th>Good</th></tr></thead>
@@ -2478,36 +2474,30 @@ type Client struct {
 </td></tr>
 </tbody></table>
 
-Embedding should provide tangible benefit, like adding or augmenting
-functionality in a semantically-appropriate way. It should do this with zero
-adverse user-facing effects (see also: [Avoid Embedding Types in Public Structs]).
+内嵌类型会带来足够的好处，比如在语义上会增加或增强功能。但应该在对用户没有影响的情况下使用内嵌。
+(参考: [避免在公共结构中嵌入类型]).
 
-Exception: Mutexes should not be embedded, even on unexported types. See also: [Zero-value Mutexes are Valid].
+例外：即使是未导出类型，Mutex 也不应该被内嵌。参考：: [Mutex的零值是有效的].
 
-[Avoid Embedding Types in Public Structs]: #avoid-embedding-types-in-public-structs
-[Zero-value Mutexes are Valid]: #zero-value-mutexes-are-valid
+[避免在公共结构中嵌入类型]: #avoid-embedding-types-in-public-structs
+[Mutex的零值是有效的]: #zero-value-mutexes-are-valid
 
-Embedding **should not**:
+这些情况下**避免内嵌**:
 
-- Be purely cosmetic or convenience-oriented.
-- Make outer types more difficult to construct or use.
-- Affect outer types' zero values. If the outer type has a useful zero value, it
-  should still have a useful zero value after embedding the inner type.
-- Expose unrelated functions or fields from the outer type as a side-effect of
-  embedding the inner type.
-- Expose unexported types.
-- Affect outer types' copy semantics.
-- Change the outer type's API or type semantics.
-- Embed a non-canonical form of the inner type.
-- Expose implementation details of the outer type.
-- Allow users to observe or control type internals.
-- Change the general behavior of inner functions through wrapping in a way that
-  would reasonably surprise users.
+- 单纯为了便利和美观。
+- 让外部类型构造起来或使用起来更困难。
+- 影响了外部的零值。如果外部类型的零值是有用的，嵌入类型应该也有一个有用的零值。
+- 作为嵌入类型的副作用，公开外部类型的不相关函数或字段。
+- 公开非导出类型。
+- 影响外部类型的复制语义。
+- 影响外部类型的API或类型语义。
+- 影响内部类型的非规范形式。
+- 公开外部类型的详细实现信息。
+- 允许用户观察和控制内部类型。
+- 通过包装的形式改变了内部函数的行为，这种包装的方式会给用户造成意外观感。
 
-Simply put, embed consciously and intentionally. A good litmus test is, "would
-all of these exported inner methods/fields be added directly to the outer type";
-if the answer is "some" or "no", don't embed the inner type - use a field
-instead.
+简单概括，使用嵌入类型时要明确目的。一个不错的方式是："这些嵌入的字段/方法是否需要被直接添加到外部
+类型"，如果答案是"一些"或者"No"，不要使用内嵌类型，而是使用命名字段。
 
 <table>
 <thead><tr><th>Bad</th><th>Good</th></tr></thead>
@@ -2607,10 +2597,9 @@ type Client struct {
 </td></tr>
 </tbody></table>
 
-### Local Variable Declarations
+### 本地变量声明
 
-Short variable declarations (`:=`) should be used if a variable is being set to
-some value explicitly.
+如果将变量声明为某个值，应该使用短变量命名方式：`:=`。
 
 <table>
 <thead><tr><th>Bad</th><th>Good</th></tr></thead>
@@ -2630,10 +2619,9 @@ s := "foo"
 </td></tr>
 </tbody></table>
 
-However, there are cases where the default value is clearer when the `var`
-keyword is used. [Declaring Empty Slices], for example.
+然而，有些情况下用 `var` 会让声明语句更加清晰，比如[声明空slice].
 
-[Declaring Empty Slices]: https://github.com/golang/go/wiki/CodeReviewComments#declaring-empty-slices
+[声明空slice]: https://github.com/golang/go/wiki/CodeReviewComments#declaring-empty-slices
 
 <table>
 <thead><tr><th>Bad</th><th>Good</th></tr></thead>
@@ -2667,12 +2655,12 @@ func f(list []int) {
 </td></tr>
 </tbody></table>
 
-### nil is a valid slice
+### nil值的slice有效
 
-`nil` is a valid slice of length 0. This means that,
+`nil` 代表长度为0的有效slice, 意味着：
 
-- You should not return a slice of length zero explicitly. Return `nil`
-  instead.
+- 你不应该声明一个长度为0的空slice，而是用`nil`来代替。 
+
 
   <table>
   <thead><tr><th>Bad</th><th>Good</th></tr></thead>
@@ -2696,8 +2684,7 @@ func f(list []int) {
   </td></tr>
   </tbody></table>
 
-- To check if a slice is empty, always use `len(s) == 0`. Do not check for
-  `nil`.
+- 要检查slice是否为空，不应该检查 `nil`, 而是用长度判断`len(s) == 0`。
 
   <table>
   <thead><tr><th>Bad</th><th>Good</th></tr></thead>
@@ -2721,8 +2708,7 @@ func f(list []int) {
   </td></tr>
   </tbody></table>
 
-- The zero value (a slice declared with `var`) is usable immediately without
-  `make()`.
+- 用 `var` 声明的零值slice是有效的，没必要用 `make` 来创建。
 
   <table>
   <thead><tr><th>Bad</th><th>Good</th></tr></thead>
@@ -2759,14 +2745,12 @@ func f(list []int) {
   </td></tr>
   </tbody></table>
 
-Remember that, while it is a valid slice, a nil slice is not equivalent to an
-allocated slice of length 0 - one is nil and the other is not - and the two may
-be treated differently in different situations (such as serialization).
+另外记住，虽然 nil 的slice有效，但是它不等于长度为0的 slice。在一些情况下(比如说序列化)，
+这两种slice的表现不同。
 
-### Reduce Scope of Variables
+### 缩小变量作用域
 
-Where possible, reduce scope of variables. Do not reduce the scope if it
-conflicts with [Reduce Nesting](#reduce-nesting).
+尽可能减小变量的作用域。如果与 [减少嵌套](#减少嵌套) 冲突，就不要缩小。
 
 <table>
 <thead><tr><th>Bad</th><th>Good</th></tr></thead>
@@ -2791,8 +2775,7 @@ if err := os.WriteFile(name, data, 0644); err != nil {
 </td></tr>
 </tbody></table>
 
-If you need a result of a function call outside of the if, then you should not
-try to reduce the scope.
+但是如果作用域是 if 范围之外，不应该减少作用域。
 
 <table>
 <thead><tr><th>Bad</th><th>Good</th></tr></thead>
@@ -2832,10 +2815,9 @@ return nil
 </td></tr>
 </tbody></table>
 
-### Avoid Naked Parameters
+### 不面参数语义不明确
 
-Naked parameters in function calls can hurt readability. Add C-style comments
-(`/* ... */`) for parameter names when their meaning is not obvious.
+在函数中裸传参数值会让代码语义不明确，可以添加 C 风格(`/* ... */`)的注释。
 
 <table>
 <thead><tr><th>Bad</th><th>Good</th></tr></thead>
@@ -2859,9 +2841,7 @@ printInfo("foo", true /* isLocal */, true /* done */)
 </td></tr>
 </tbody></table>
 
-Better yet, replace naked `bool` types with custom types for more readable and
-type-safe code. This allows more than just two states (true/false) for that
-parameter in the future.
+当然，更好的处理方式将上面的 `bool` 换成自定义类型。因为未来可能不仅仅局限于两个bool值(true/false)。
 
 ```go
 type Region int
@@ -2882,11 +2862,10 @@ const (
 func printInfo(name string, region Region, status Status)
 ```
 
-### Use Raw String Literals to Avoid Escaping
+### 字符串中避免转义
 
-Go supports [raw string literals](https://golang.org/ref/spec#raw_string_lit),
-which can span multiple lines and include quotes. Use these to avoid
-hand-escaped strings which are much harder to read.
+Go中支持 [字符串原始值](https://golang.org/ref/spec#raw_string_lit),当需要
+转义时，尽量使用 "`" 来包装字符串。
 
 <table>
 <thead><tr><th>Bad</th><th>Good</th></tr></thead>
@@ -2906,12 +2885,11 @@ wantError := `unknown error:"test"`
 </td></tr>
 </tbody></table>
 
-### Initializing Structs
+### 初始化结构体
 
-#### Use Field Names to Initialize Structs
+#### 初始化结构体时声明字段名
 
-You should almost always specify field names when initializing structs. This is
-now enforced by [`go vet`].
+在你初始化结构时，几乎应该始终指定字段名。目前由[`go vet`]强制执行。
 
 [`go vet`]: https://golang.org/cmd/vet/
 
