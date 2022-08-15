@@ -1927,38 +1927,29 @@ BenchmarkGood-4   100000000    0.21s
 
 ### 避免代码过长
 
+避免由于长度过长而需要水平滚动或者太需要转动头部的代码。
 
-Avoid lines of code that require readers to scroll horizontally
-or turn their heads too much.
+我们建议一行代码长度为 **99个字符**，如果代码超过了这个限制就应该换行。但是这也不是绝对的，代码
+可以超过这个限制。
 
-We recommend a soft line length limit of **99 characters**.
-Authors should aim to wrap lines before hitting this limit,
-but it is not a hard limit.
-Code is allowed to exceed this limit.
+### 一致性
 
-### Be Consistent
+本文的一些指导准则可以被客观评估，其他准则可以根据实际情况进行选择。
 
-Some of the guidelines outlined in this document can be evaluated objectively;
-others are situational, contextual, or subjective.
+但是最重要是，在你的代码中要**保持一致**。
 
-Above all else, **be consistent**.
+一致性的代码更易于维护，更容易合理化，需要的认知开销较少；当新的管理出现时或 bug 被修复后也更易于
+迁移和更新。
 
-Consistent code is easier to maintain, is easier to rationalize, requires less
-cognitive overhead, and is easier to migrate or update as new conventions emerge
-or classes of bugs are fixed.
+与之相反，如果单个代码库中有多种冲突的风格，会让维护成本升高、不确定性增高、认知不协调，这些问题会
+导致开发效率降低，code review 困难，且容易产生 bug。
 
-Conversely, having multiple disparate or conflicting styles within a single
-codebase causes maintenance overhead, uncertainty, and cognitive dissonance,
-all of which can directly contribute to lower velocity, painful code reviews,
-and bugs.
+当你在代码库中实施标准时，建议最低在包层面进行修改：在子包层面进行应用违反了上述约定，因为在一种代码
+里面引入了多种风格。
 
-When applying these guidelines to a codebase, it is recommended that changes
-are made at a package (or larger) level: application at a sub-package level
-violates the above concern by introducing multiple styles into the same code.
+### 相似声明放一组
 
-### Group Similar Declarations
-
-Go supports grouping similar declarations.
+Go语言支持组引用。
 
 <table>
 <thead><tr><th>Bad</th><th>Good</th></tr></thead>
@@ -1982,7 +1973,7 @@ import (
 </td></tr>
 </tbody></table>
 
-This also applies to constants, variables, and type declarations.
+组声明同样适用于常量、变量和类型声明。
 
 <table>
 <thead><tr><th>Bad</th><th>Good</th></tr></thead>
@@ -2027,7 +2018,7 @@ type (
 </td></tr>
 </tbody></table>
 
-Only group related declarations. Do not group declarations that are unrelated.
+注意只把相关的变量声明到一个组里，不想管的声明放在多个组里。
 
 <table>
 <thead><tr><th>Bad</th><th>Good</th></tr></thead>
@@ -2062,8 +2053,7 @@ const EnvVar = "MY_ENV"
 </td></tr>
 </tbody></table>
 
-Groups are not limited in where they can be used. For example, you can use them
-inside of functions.
+组声明不限制在哪使用。比如，你可以在函数中使用组声明。
 
 <table>
 <thead><tr><th>Bad</th><th>Good</th></tr></thead>
@@ -2097,9 +2087,7 @@ func f() string {
 </td></tr>
 </tbody></table>
 
-Exception: Variable declarations, particularly inside functions, should be
-grouped together if declared adjacent to other variables. Do this for variables
-declared together even if they are unrelated.
+例外：对于变量声明，尤其是函数中的变量声明，不管他们之间是否有关系，都应该被放在一个组内。 
 
 <table>
 <thead><tr><th>Bad</th><th>Good</th></tr></thead>
@@ -2135,14 +2123,14 @@ func (c *client) request() {
 </td></tr>
 </tbody></table>
 
-### Import Group Ordering
+### 包导入顺序
 
-There should be two import groups:
+包中应该有两种导入顺序：
 
-- Standard library
-- Everything else
+- 标准库
+- 其他库
 
-This is the grouping applied by goimports by default.
+默认情况下，应该使用 goimports 的导入顺序。
 
 <table>
 <thead><tr><th>Bad</th><th>Good</th></tr></thead>
@@ -2173,35 +2161,31 @@ import (
 </td></tr>
 </tbody></table>
 
-### Package Names
+### 包命名
 
-When naming packages, choose a name that is:
+当命名包时，应按照下面原则命名：
 
-- All lower-case. No capitals or underscores.
-- Does not need to be renamed using named imports at most call sites.
-- Short and succinct. Remember that the name is identified in full at every call
-  site.
-- Not plural. For example, `net/url`, not `net/urls`.
-- Not "common", "util", "shared", or "lib". These are bad, uninformative names.
+- 全小写字母。无大写字母或下划线。
+- 大多数导入包的情况下，不需要对包重新命名。
+- 简短而简洁，因为当你使用包名时你都需要完成输入包名称。
+- 不要使用复数。比如：命名为 `net/url`, 而不是 `net/urls`。
+- 不要使用"common", "util", "shared", 或 "lib"。这些包含有信息太少了。
 
-See also [Package Names] and [Style guideline for Go packages].
+可以参考 [Package Names] 和 [Style guideline for Go packages].
 
 [Package Names]: https://blog.golang.org/package-names
 [Style guideline for Go packages]: https://rakyll.org/style-packages/
 
-### Function Names
+### 函数命名
 
-We follow the Go community's convention of using [MixedCaps for function
-names]. An exception is made for test functions, which may contain underscores
-for the purpose of grouping related test cases, e.g.,
-`TestMyFunction_WhatIsBeingTested`.
+我们遵守 Go 社区 [MixedCaps for function names] 约定。一种其他情况是使用测试函数。测试函数
+命名可以包含下划线以便于相关测试函数进行分组。比如：`TestMyFunction_WhatIsBeingTested`。
 
 [MixedCaps for function names]: https://golang.org/doc/effective_go.html#mixed-caps
 
-### Import Aliasing
+### 导入别名
 
-Import aliasing must be used if the package name does not match the last
-element of the import path.
+如果包名称和导入路径最后一个元素不匹配，就需要使用导入别名。
 
 ```go
 import (
@@ -2212,8 +2196,7 @@ import (
 )
 ```
 
-In all other scenarios, import aliases should be avoided unless there is a
-direct conflict between imports.
+其他情况下，除非几个包之间有导入冲突，否则应该避免使用导入别名。
 
 <table>
 <thead><tr><th>Bad</th><th>Good</th></tr></thead>
@@ -2245,19 +2228,16 @@ import (
 </td></tr>
 </tbody></table>
 
-### Function Grouping and Ordering
+### 函数分组和排序
 
-- Functions should be sorted in rough call order.
-- Functions in a file should be grouped by receiver.
+- 函数应该按照大概调用顺序排序。
+- 一个文件中的函数应该按照接收者分组。
 
-Therefore, exported functions should appear first in a file, after
-`struct`, `const`, `var` definitions.
+因此，导入的函数时，应该放在 `struct`, `const`, `var` 的下面。
 
-A `newXYZ()`/`NewXYZ()` may appear after the type is defined, but before the
-rest of the methods on the receiver.
+像 `newXYZ()`/`NewXYZ()` 这样的函数可能会出现在类型定义下、接收者的其他方法之上。
 
-Since functions are grouped by receiver, plain utility functions should appear
-towards the end of the file.
+由于函数是按照接收者进行分组的，普通的工具函数应该放在文件末尾。
 
 <table>
 <thead><tr><th>Bad</th><th>Good</th></tr></thead>
@@ -2301,11 +2281,9 @@ func calcCost(n []int) int {...}
 </td></tr>
 </tbody></table>
 
-### Reduce Nesting
+### 减少嵌套
 
-Code should reduce nesting where possible by handling error cases/special
-conditions first and returning early or continuing the loop. Reduce the amount
-of code that is nested multiple levels.
+代码应通过尽早处理错误/特殊情况尽早处理/循环中使用 continue 等手段，来减少嵌套代码过多问题。
 
 <table>
 <thead><tr><th>Bad</th><th>Good</th></tr></thead>
@@ -2347,10 +2325,9 @@ for _, v := range data {
 </td></tr>
 </tbody></table>
 
-### Unnecessary Else
+### 没用的else
 
-If a variable is set in both branches of an if, it can be replaced with a
-single if.
+如啊a变量在两个if分支中都进行赋值操作，则可以被替换为只在一个if分支中声明。
 
 <table>
 <thead><tr><th>Bad</th><th>Good</th></tr></thead>
@@ -2378,10 +2355,9 @@ if b {
 </td></tr>
 </tbody></table>
 
-### Top-level Variable Declarations
+### 顶层变量声明
 
-At the top level, use the standard `var` keyword. Do not specify the type,
-unless it is not the same type as the expression.
+在顶层使用`var`来声明变量。不要指定类型，除非它和表达式的类型不同。
 
 <table>
 <thead><tr><th>Bad</th><th>Good</th></tr></thead>
@@ -2407,8 +2383,7 @@ func F() string { return "A" }
 </td></tr>
 </tbody></table>
 
-Specify the type if the type of the expression does not match the desired type
-exactly.
+如果表达式的类型和所需类型不一样，需要指定类型。
 
 ```go
 type myError struct{}
@@ -2421,7 +2396,7 @@ var _e error = F()
 // F returns an object of type myError but we want error.
 ```
 
-### Prefix Unexported Globals with _
+### 非导出变量使用_前缀
 
 Prefix unexported top-level `var`s and `const`s with `_` to make it clear when
 they are used that they are global symbols.
