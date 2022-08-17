@@ -58,7 +58,7 @@
     - [Initializing Structs](#initializing-structs)
         - [Use Field Names to Initialize Structs](#use-field-names-to-initialize-structs)
         - [Omit Zero Value Fields in Structs](#omit-zero-value-fields-in-structs)
-        - [Use `var` for Zero Value Structs](#use-var-for-zero-value-structs)
+        - [空结构体用var声明](#空结构体用var声明)
         - [Initializing Struct References](#initializing-struct-references)
     - [Initializing Maps](#initializing-maps)
     - [Format Strings outside Printf](#format-strings-outside-printf)
@@ -2915,8 +2915,7 @@ k := User{
 </td></tr>
 </tbody></table>
 
-Exception: Field names *may* be omitted in test tables when there are 3 or
-fewer fields.
+例外：当有 3 个或更少的字段时，测试表中的字段名也许可以省略。
 
 ```go
 tests := []struct{
@@ -2928,11 +2927,10 @@ tests := []struct{
 }
 ```
 
-#### Omit Zero Value Fields in Structs
+#### 省略结构体中的零值字段
 
-When initializing structs with field names, omit fields that have zero values
-unless they provide meaningful context. Otherwise, let Go set these to zero
-values automatically.
+当初始化结构体字段时，除非需要提供一个有意义的上下文，否则需要忽略对零值字段进行赋值。因为Go
+会自动给这些零值字段进行填充。
 
 <table>
 <thead><tr><th>Bad</th><th>Good</th></tr></thead>
@@ -2960,8 +2958,7 @@ user := User{
 </td></tr>
 </tbody></table>
 
-This helps reduce noise for readers by omitting values that are default in
-that context. Only meaningful values are specified.
+这种行为让我们忽略了上下文无关的噪音信息。只关注有意义的特殊值。
 
 Include zero values where field names provide meaningful context. For example,
 test cases in [Test Tables](#test-tables) can benefit from names of fields
@@ -2977,10 +2974,9 @@ tests := []struct{
 }
 ```
 
-#### Use `var` for Zero Value Structs
+#### 空结构体用var声明
 
-When all the fields of a struct are omitted in a declaration, use the `var`
-form to declare the struct.
+当结构体中所有的字段都为空时，用 `var` 来声明结构体。
 
 <table>
 <thead><tr><th>Bad</th><th>Good</th></tr></thead>
@@ -3006,10 +3002,9 @@ we prefer to [declare empty slices][Declaring Empty Slices].
 
 [map initialization]: #initializing-maps
 
-#### Initializing Struct References
+#### 初始化结构体引用
 
-Use `&T{}` instead of `new(T)` when initializing struct references so that it
-is consistent with the struct initialization.
+初始化结构引用时，请使用`&T{}`代替`new(T)`，以使其与结构体初始化一致。
 
 <table>
 <thead><tr><th>Bad</th><th>Good</th></tr></thead>
@@ -3035,12 +3030,9 @@ sptr := &T{Name: "bar"}
 </td></tr>
 </tbody></table>
 
-### Initializing Maps
+### 初始化Map
 
-Prefer `make(..)` for empty maps, and maps populated
-programmatically. This makes map initialization visually
-distinct from declaration, and it makes it easy to add size
-hints later if available.
+优先使用make来创建空map，这样使得map的初始化不同于声明，而且你还可以在 make 中添加map的大小提示。
 
 <table>
 <thead><tr><th>Bad</th><th>Good</th></tr></thead>
@@ -3079,13 +3071,9 @@ Declaration and initialization are visually distinct.
 </td></tr>
 </tbody></table>
 
-Where possible, provide capacity hints when initializing
-maps with `make()`. See
-[Specifying Map Capacity Hints](#specifying-map-capacity-hints)
-for more information.
+尽可能在 `make()` 中制定map的初始化容量，可以参考：[Specifying Map Capacity Hints](#specifying-map-capacity-hints)。
 
-On the other hand, if the map holds a fixed list of elements,
-use map literals to initialize the map.
+另外，如果map初始化的时候需要赋值固定信息，使用 map literals 方式来初始化。
 
 <table>
 <thead><tr><th>Bad</th><th>Good</th></tr></thead>
@@ -3113,16 +3101,15 @@ m := map[T1]T2{
 </tbody></table>
 
 
-The basic rule of thumb is to use map literals when adding a fixed set of
-elements at initialization time, otherwise use `make` (and specify a size hint
-if available).
+原则上：在初始化map时增加一组固定的元素，就使用map literals。否则就使用 `make`(如果可以，
+尽可能指定map的容量)。
 
-### Format Strings outside Printf
 
-If you declare format strings for `Printf`-style functions outside a string
-literal, make them `const` values.
+### 在Printf外面格式化字符串
 
-This helps `go vet` perform static analysis of the format string.
+如果你在函数外声明 `Printf` 风格 函数的格式字符串，请将其设置为 `const` 常量。
+
+这有助于go vet对格式字符串执行静态分析。
 
 <table>
 <thead><tr><th>Bad</th><th>Good</th></tr></thead>
@@ -3144,20 +3131,17 @@ fmt.Printf(msg, 1, 2)
 </td></tr>
 </tbody></table>
 
-### Naming Printf-style Functions
+### 命名Printf样式函数
 
-When you declare a `Printf`-style function, make sure that `go vet` can detect
-it and check the format string.
+使用`Printf`函数时，应保证`go vet`可以检测到他的格式化字符串。
 
-This means that you should use predefined `Printf`-style function
-names if possible. `go vet` will check these by default. See [Printf family]
-for more information.
+
+这意味着你需要使用预定义的`Printf`函数名称，`go vet`会默认检查这些。更多信息，请参考：[Printf family]
 
 [Printf family]: https://golang.org/cmd/vet/#hdr-Printf_family
 
-If using the predefined names is not an option, end the name you choose with
-f: `Wrapf`, not `Wrap`. `go vet` can be asked to check specific `Printf`-style
-names but they must end with f.
+如果不能使用预定义的名称，请以 f 结束选择的名称：`Wrapf`，而不是`Wrap`。`go vet`可以要求检查特定的 `Printf`
+样式名称，但名称必须以`f`结尾。
 
 ```shell
 $ go vet -printfuncs=wrapf,statusf
@@ -3171,8 +3155,7 @@ See also [go vet: Printf family check].
 
 ### Test Tables
 
-Use table-driven tests with [subtests] to avoid duplicating code when the core
-test logic is repetitive.
+当你的测试用例形式上重复时，用 [subtests] 方式编写case会让测试用例看起来更加简洁。
 
 [subtests]: https://blog.golang.org/subtests
 
@@ -3250,12 +3233,11 @@ for _, tt := range tests {
 </td></tr>
 </tbody></table>
 
-Test tables make it easier to add context to error messages, reduce duplicate
-logic, and add new test cases.
+显然，如果你用了test table的方式，在拓展测试用例时也会显得更加清晰。
 
-We follow the convention that the slice of structs is referred to as `tests`
-and each test case `tt`. Further, we encourage explicating the input and output
-values for each test case with `give` and `want` prefixes.
+我们遵守这样的准则：搞一个slice类型的struct测试用例，每个测试case叫做`tt`。然后使用`give`和
+`want`说明测试用例的输入和输出。
+
 
 ```go
 tests := []struct{
@@ -3298,8 +3280,9 @@ iteration because of the use of `t.Parallel()` below.
 If we do not do that, most or all tests will receive an unexpected value for
 `tt`, or a value that changes as they're running.
 
-### Functional Options
+### 函数功能选项API
 
+功能选项是一种模式，你可以在中间声明一个不透明的 `Option` 类型，
 Functional options is a pattern in which you declare an opaque `Option` type
 that records information in some internal struct. You accept a variadic number
 of these options and act upon the full information recorded by the options on
@@ -3367,7 +3350,8 @@ db.Open(addr, false /* cache */, log)
 
 </td><td>
 
-Options are provided only if needed.
+Options 只在需要时才被提供。
+
 
 ```go
 db.Open(addr)
