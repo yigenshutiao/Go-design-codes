@@ -3147,7 +3147,7 @@ fmt.Printf(msg, 1, 2)
 $ go vet -printfuncs=wrapf,statusf
 ```
 
-See also [go vet: Printf family check].
+参考 [go vet: Printf family check].
 
 [go vet: Printf family check]: https://kuzminva.wordpress.com/2017/11/07/go-vet-printf-family-check/
 
@@ -3253,10 +3253,8 @@ for _, tt := range tests {
 }
 ```
 
-Parallel tests, like some specialized loops (for example, those that spawn
-goroutines or capture references as part of the loop body),
-must take care to explicitly assign loop variables within the loop's scope to
-ensure that they hold the expected values.
+对于并行测试，比如一些特殊的循环 (比如那些生产 goroutine 或 在循环中捕获引用的循环), 需要
+注意在循环中明确分配循环变量来确保不会产生闭包。
 
 ```go
 tests := []struct{
@@ -3274,23 +3272,16 @@ for _, tt := range tests {
   })
 }
 ```
-
-In the example above, we must declare a `tt` variable scoped to the loop
-iteration because of the use of `t.Parallel()` below.
-If we do not do that, most or all tests will receive an unexpected value for
-`tt`, or a value that changes as they're running.
+在上面的例子中，由于循环中使用了 `t.Parallel()`，我们必须在外部循环中声明一个 `tt` 变量。
+如果不这么做，大多数测试用例都会收到一个非预期的 `tt`，或是一个在运行期改变的值。
 
 ### 函数功能选项API
 
-功能选项是一种模式，你可以在中间声明一个不透明的 `Option` 类型，
-Functional options is a pattern in which you declare an opaque `Option` type
-that records information in some internal struct. You accept a variadic number
-of these options and act upon the full information recorded by the options on
-the internal struct.
+功能选项是一种模式，你可以声明一个对用户不透明的 `Option` 类型，在一些内部结构中记录信息。
+函数接收不定长的参数选项，并根据参数做不同的行为。
 
-Use this pattern for optional arguments in constructors and other public APIs
-that you foresee needing to expand, especially if you already have three or
-more arguments on those functions.
+对于需要拓展参数的构造方法或是其他需要可选参数的公共API可以考虑这种模式，对于参数在三个及以上
+的函数更应该考虑。
 
 <table>
 <thead><tr><th>Bad</th><th>Good</th></tr></thead>
@@ -3338,8 +3329,7 @@ func Open(
 </td></tr>
 <tr><td>
 
-The cache and logger parameters must always be provided, even if the user
-wants to use the default.
+即使用户默认不需要 cache 和 logger，也需要提供这俩参数。
 
 ```go
 db.Open(addr, db.DefaultCache, zap.NewNop())
@@ -3367,9 +3357,8 @@ db.Open(
 </td></tr>
 </tbody></table>
 
-Our suggested way of implementing this pattern is with an `Option` interface
-that holds an unexported method, recording options on an unexported `options`
-struct.
+我们建议这种模式的实现方式是 提供一个 `Option` 接口，里面有一个非导出类型方法，在一个非
+导出类型的 `options` 结构体中记录选项。
 
 ```go
 type options struct {
@@ -3421,15 +3410,11 @@ func Open(
 }
 ```
 
-Note that there's a method of implementing this pattern with closures but we
-believe that the pattern above provides more flexibility for authors and is
-easier to debug and test for users. In particular, it allows options to be
-compared against each other in tests and mocks, versus closures where this is
-impossible. Further, it lets options implement other interfaces, including
-`fmt.Stringer` which allows for user-readable string representations of the
-options.
+还有一种用闭包实现这种方法的模式，但我们认为上面提供的这种模式给作者提供了更高的灵活性，更
+易于调试和测试。这种方式可以在测试和mock中进行比较，而闭包方式难以做到。此外，它允许 option
+实现其他接口，比如 `fmt.Stringer`，会 string 类型的可读性更高。
 
-See also,
+还可以参考：
 
 - [Self-referential functions and the design of options]
 - [Functional options for friendly APIs]
@@ -3442,18 +3427,16 @@ use one vs other -->
 
 ## Linting
 
-More importantly than any "blessed" set of linters, lint consistently across a
-codebase.
+比其他任何 "神圣" linter 工具更重要的是，在你的代码库里使用一致性的 lint 工具。
 
-We recommend using the following linters at a minimum, because we feel that they
-help to catch the most common issues and also establish a high bar for code
-quality without being unnecessarily prescriptive:
+我们建议最少要使用下面这些 linters 工具吗，因为我们认为这些工具可以帮你捕获最常见的问题，有助于
+在没有规定的前提下提高代码质量：
 
-- [errcheck] to ensure that errors are handled
-- [goimports] to format code and manage imports
-- [golint] to point out common style mistakes
-- [govet] to analyze code for common mistakes
-- [staticcheck] to do various static analysis checks
+- [errcheck] 确保错误被处理
+- [goimports] 格式化代码和管理包引用
+- [golint] 指出常见的文本错误
+- [govet] 分析代码中的常见错误
+- [staticcheck] 各种静态分析检查
 
   [errcheck]: https://github.com/kisielk/errcheck
   [goimports]: https://godoc.org/golang.org/x/tools/cmd/goimports
