@@ -14,7 +14,7 @@
     - [在边界拷贝Slices和Maps](#在边界拷贝Slices和Maps)
     - [使用Defer释放资源](#使用Defer释放资源)
     - [Channel大小应为0或1](#Channel大小应为0或1)
-    - [Start Enums at One](#start-enums-at-one)
+    - [枚举从 开始](#枚举从1开始)
     - [使用time包来处理时间](#使用time包来处理时间)
     - [错误](#错误)
         - [错误类型](#错误类型)
@@ -22,50 +22,50 @@
         - [错误命名](#错误命名)
     - [处理断言失败](#处理断言失败)
     - [不要使用Panic](#不要使用Panic)
-    - [Use go.uber.org/atomic](#use-gouberorgatomic)
-    - [Avoid Mutable Globals](#avoid-mutable-globals)
+    - [使用go.uber.org/atomic](#使用gouberorgatomic)
+    - [避免可变全局变量](#避免可变全局变量)
     - [避免在公共结构体中内嵌类型](#避免在公共结构体中内嵌类型)
-    - [避免使用内建命名](#避免使用内建命名)
+    - [避免使用内置名称](#避免使用内置名称)
     - [避免使用init()](#避免使用init())
-    - [Exit in Main](#exit-in-main)
-        - [Exit Once](#exit-once)
-    - [Use field tags in marshaled structs](#use-field-tags-in-marshaled-structs)
-- [Performance](#performance)
-    - [Prefer strconv over fmt](#prefer-strconv-over-fmt)
-    - [Avoid string-to-byte conversion](#avoid-string-to-byte-conversion)
-    - [Prefer Specifying Container Capacity](#prefer-specifying-container-capacity)
-        - [Specifying Map Capacity Hints](#specifying-map-capacity-hints)
-        - [Specifying Slice Capacity](#specifying-slice-capacity)
-- [Style](#style)
-    - [Avoid overly long lines](#avoid-overly-long-lines)
-    - [Be Consistent](#be-consistent)
-    - [Group Similar Declarations](#group-similar-declarations)
-    - [Import Group Ordering](#import-group-ordering)
-    - [Package Names](#package-names)
-    - [Function Names](#function-names)
-    - [Import Aliasing](#import-aliasing)
-    - [Function Grouping and Ordering](#function-grouping-and-ordering)
-    - [Reduce Nesting](#reduce-nesting)
-    - [Unnecessary Else](#unnecessary-else)
-    - [Top-level Variable Declarations](#top-level-variable-declarations)
-    - [Prefix Unexported Globals with _](#prefix-unexported-globals-with-_)
-    - [Embedding in Structs](#embedding-in-structs)
-    - [Local Variable Declarations](#local-variable-declarations)
-    - [nil is a valid slice](#nil-is-a-valid-slice)
-    - [Reduce Scope of Variables](#reduce-scope-of-variables)
-    - [Avoid Naked Parameters](#avoid-naked-parameters)
-    - [Use Raw String Literals to Avoid Escaping](#use-raw-string-literals-to-avoid-escaping)
-    - [Initializing Structs](#initializing-structs)
-        - [Use Field Names to Initialize Structs](#use-field-names-to-initialize-structs)
-        - [Omit Zero Value Fields in Structs](#omit-zero-value-fields-in-structs)
+    - [优雅退出主函数](#优雅退出主函数)
+        - [退出一次](#退出一次)
+    - [在序列化结构中使用字段标记](#在序列化结构中使用字段标记)
+- [性能](#性能)
+    - [优先使用 strconv 而不是 fmt](#优先使用 strconv 而不是 fmt)
+    - [避免字符串到字节的转换](#避免字符串到字节的转换)
+    - [指定容器容量](#指定容器容量)
+        - [指定 Map 容量](#指定 Map 容量)
+        - [指定切片容量](#指定切片容量)
+- [规范](#规范)
+    - [避免过长的行](#避免过长的行)
+    - [一致性](#一致性)
+    - [相似的声明放在一组](#相似的声明放在一组)
+    - [import 分组](#import 分组)
+    - [包名](#包名)
+    - [函数名](#函数名)
+    - [导入别名](#导入别名)
+    - [函数分组与顺序](#函数分组与顺序)
+    - [减少嵌套](#减少嵌套)
+    - [不必要的else](#不必要的else)
+    - [顶层变量声明](#顶层变量声明)
+    - [对于未导出的顶层常量和变量，使用_作为前缀](#对于未导出的顶层常量和变量，使用_作为前缀)
+    - [结构体中的嵌入](#结构体中的嵌入)
+    - [本地变量声明](#本地变量声明)
+    - [nil 是一个有效的 slice](#nil 是一个有效的 slice)
+    - [缩小变量作用域](#缩小变量作用域)
+    - [避免参数语义不明确](#避免参数语义不明确)
+    - [使用原始字符串字面值，避免转义](#使用原始字符串字面值，避免转义)
+    - [初始化结构体](#初始化结构体)
+        - [使用字段名初始化结构](#使用字段名初始化结构)
+        - [省略结构中的零值字段](#省略结构中的零值字段)
         - [空结构体用var声明](#空结构体用var声明)
-        - [Initializing Struct References](#initializing-struct-references)
-    - [Initializing Maps](#initializing-maps)
-    - [Format Strings outside Printf](#format-strings-outside-printf)
-    - [Naming Printf-style Functions](#naming-printf-style-functions)
-- [Patterns](#patterns)
-    - [Test Tables](#test-tables)
-    - [Functional Options](#functional-options)
+        - [初始化 Struct 引用](#初始化 Struct 引用)
+    - [初始化 Maps](#初始化 Maps)
+    - [字符串 string format](#字符串 string format)
+    - [命名 Printf 样式的函数](#命名 Printf 样式的函数)
+- [编程模式](#编程模式)
+    - [表驱动测试](#表驱动测试)
+    - [功能选项](#功能选项)
 - [Linting](#linting)
 
 ## 介绍
@@ -2856,7 +2856,7 @@ type Status int
 const (
   StatusReady Status = iota + 1
   StatusDone
-  // Maybe we will have a StatusInProgress in the future.
+  // 获取未来会有 StatusInProgress 枚举
 )
 
 func printInfo(name string, region Region, status Status)
@@ -2960,9 +2960,9 @@ user := User{
 
 这种行为让我们忽略了上下文无关的噪音信息。只关注有意义的特殊值。
 
-Include zero values where field names provide meaningful context. For example,
-test cases in [Test Tables](#test-tables) can benefit from names of fields
-even when they are zero-valued.
+当零值代表有意义的上下文时需要提供零值。比如在  [表驱动测试](#表驱动测试) 中零值字段
+是有意义的。
+
 
 ```go
 tests := []struct{
@@ -2996,11 +2996,10 @@ var user User
 </td></tr>
 </tbody></table>
 
-This differentiates zero valued structs from those with non-zero fields
-similar to the distinction created for [map initialization], and matches how
-we prefer to [declare empty slices][Declaring Empty Slices].
+这种 零值结构体 和具有非零值字段的结构体有所不同，和 [map初始化] 更相似，
+和我们更想用的 [声明空Slices][声明空Slices] 更匹配。
 
-[map initialization]: #initializing-maps
+[map初始化]: #map初始化
 
 #### 初始化结构体引用
 
@@ -3014,7 +3013,7 @@ we prefer to [declare empty slices][Declaring Empty Slices].
 ```go
 sval := T{Name: "foo"}
 
-// inconsistent
+// 非一致的
 sptr := new(T)
 sptr.Name = "bar"
 ```
@@ -3041,8 +3040,8 @@ sptr := &T{Name: "bar"}
 
 ```go
 var (
-  // m1 is safe to read and write;
-  // m2 will panic on writes.
+  // m1 的读写操作都是安全的
+  // m2 的写操作会panic
   m1 = map[T1]T2{}
   m2 map[T1]T2
 )
@@ -3052,8 +3051,8 @@ var (
 
 ```go
 var (
-  // m1 is safe to read and write;
-  // m2 will panic on writes.
+  // m1 的读写操作都是安全的
+  // m2 的写操作会panic
   m1 = make(map[T1]T2)
   m2 map[T1]T2
 )
@@ -3062,11 +3061,12 @@ var (
 </td></tr>
 <tr><td>
 
-Declaration and initialization are visually similar.
+声明和初始化在形式上相似
 
 </td><td>
 
-Declaration and initialization are visually distinct.
+声明和初始化在形式上隔离
+
 
 </td></tr>
 </tbody></table>
@@ -3317,7 +3317,7 @@ func WithLogger(log *zap.Logger) Option {
   // ...
 }
 
-// Open creates a connection.
+// Open 创建一个连接
 func Open(
   addr string,
   opts ...Option,
@@ -3392,7 +3392,7 @@ func WithLogger(log *zap.Logger) Option {
   return loggerOption{Log: log}
 }
 
-// Open creates a connection.
+// Open 创建一个连接
 func Open(
   addr string,
   opts ...Option,
@@ -3447,14 +3447,12 @@ use one vs other -->
 
 ### Lint Runners
 
-We recommend [golangci-lint] as the go-to lint runner for Go code, largely due
-to its performance in larger codebases and ability to configure and use many
-canonical linters at once. This repo has an example [.golangci.yml] config file
-with recommended linters and settings.
+由于优秀的性能表现，我们推荐 [golangci-lint] 作为Go代码的首选 lint 工具。这个仓库有在一个
+[.golangci.yml] 例子，里面有配置的 linters 工具和设置。
 
-golangci-lint has [various linters] available for use. The above linters are
-recommended as a base set, and we encourage teams to add any additional linters
-that make sense for their projects.
+
+golangci-lint 有一系列 [various linters] 可供使用。建议将这些 linters 作为基础集合，
+我们鼓励团队内部将其他有意义的 linters 工具在他们的项目中进行使用。
 
 [golangci-lint]: https://github.com/golangci/golangci-lint
 [.golangci.yml]: https://github.com/uber-go/guide/blob/master/.golangci.yml
