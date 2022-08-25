@@ -3,11 +3,14 @@
 
 # Uber Go Style Guide
 
+
+> Uber公司推出的Go语言规范，建议没看过的同学看一遍，内容同步到了我的GitHub上，后续会补充一些case，有兴趣的同学可以点击原文
+
 ## Table of Contents
 
 - [介绍](#介绍)
 - [指南](#指南)
-    - [指针转换为interface](#指针转换为interface)
+    - [指向interface的指针](#指向interface的指针)
     - [验证接口合法性](#验证接口合法性)
     - [接收者和接口](#接收者和接口)
     - [Mutexes的零值是有效的](#Mutexes的零值是有效的)
@@ -31,16 +34,16 @@
         - [退出一次](#退出一次)
     - [在序列化结构中使用字段标记](#在序列化结构中使用字段标记)
 - [性能](#性能)
-    - [优先使用 strconv 而不是 fmt](#优先使用 strconv 而不是 fmt)
+    - [优先使用strconv而不是fmt](#优先使用strconv而不是fmt)
     - [避免字符串到字节的转换](#避免字符串到字节的转换)
     - [指定容器容量](#指定容器容量)
-        - [指定 Map 容量](#指定 Map 容量)
+        - [指定Map容量](#指定Map容量)
         - [指定切片容量](#指定切片容量)
 - [规范](#规范)
     - [避免过长的行](#避免过长的行)
     - [一致性](#一致性)
     - [相似的声明放在一组](#相似的声明放在一组)
-    - [import 分组](#import 分组)
+    - [import分组](#import分组)
     - [包名](#包名)
     - [函数名](#函数名)
     - [导入别名](#导入别名)
@@ -51,7 +54,7 @@
     - [对于未导出的顶层常量和变量，使用_作为前缀](#对于未导出的顶层常量和变量，使用_作为前缀)
     - [结构体中的嵌入](#结构体中的嵌入)
     - [本地变量声明](#本地变量声明)
-    - [nil 是一个有效的 slice](#nil 是一个有效的 slice)
+    - [nil是一个有效的slice](#nil是一个有效的slice)
     - [缩小变量作用域](#缩小变量作用域)
     - [避免参数语义不明确](#避免参数语义不明确)
     - [使用原始字符串字面值，避免转义](#使用原始字符串字面值，避免转义)
@@ -87,36 +90,27 @@
 
 所有代码在通过golint和go vet运行时应该是没有错误的。我们建议将您的编辑器设置为：
 
-- Run goimports on save
-
-- Run golint and go vet to check for errors
+- 保存时运行 goimports
+- 运行 golint 和 go vet 检查错误
 
 你可以在这里找到编辑器支持Go工具的信息：
 <https://github.com/golang/go/wiki/IDEsAndTextEditorPlugins>
 
 
 
-
-
-
 ## 指南
 
-### 指针转换为interface
+### 指向interface的指针
 
+你几乎不需要一个指向 interface 的指针，interface类型数据应该直接传递，但实际上 interface
+底层是一个指针。
 
+interface 类型包括两部分：
 
-You almost never need a pointer to an interface. You should be passing
-interfaces as values—the underlying data can still be a pointer.
+1. 一个指向特定类型的指针。可以将其视为 "类型"。
+2. 数据指针。如果底层数据是指针，会被直接存储。如果底层数据是值，那会存储这个数据的指针。
 
-An interface is two fields:
-
-1. A pointer to some type-specific information. You can think of this as
-   "type."
-2. Data pointer. If the data stored is a pointer, it’s stored directly. If
-   the data stored is a value, then a pointer to the value is stored.
-
-If you want interface methods to modify the underlying data, you must use a
-pointer.
+如果你想要接口方法修改基础数据，那必须使用指针。
 
 
 
@@ -125,9 +119,9 @@ pointer.
 在编译期验证接口的合法性，需要验证的有：
 
 - 验证导出类型在作为API时是否实现了特定接口
-- Exported or unexported types that are part of a collection of types
-  implementing the same interface
-- Other cases where violating an interface would break users
+- 实现一个接口的导出和非导出类型是集合的一部分
+- 违反接口合理性无法编译通过，通知用户
+
 
 <table>
 <thead><tr><th>Bad</th><th>Good</th></tr></thead>
