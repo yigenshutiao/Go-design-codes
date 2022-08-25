@@ -1086,12 +1086,11 @@ if err != nil {
 ### 使用 go.uber.org/atomic
 
 使用 [sync/atomic] 包的原子操作
-Atomic operations with the [sync/atomic] package operate on the raw types
-(`int32`, `int64`, etc.) so it is easy to forget to use the atomic operation to
-read or modify the variables.
+使用 sync/atomic 包的原子操作对数据类型进行操作(int32, int64, 等.) 。因为自己操作容易忘记
+使用原子操作对变量进行读取和修改。
 
-[go.uber.org/atomic] adds type safety to these operations by hiding the
-underlying type. Additionally, it includes a convenient `atomic.Bool` type.
+[go.uber.org/atomic] 通过隐藏基础类型为这些操作增加了类型安全性，它还包括一个很方便的
+atomic.Bool 类型.
 
 [go.uber.org/atomic]: https://godoc.org/go.uber.org/atomic
 [sync/atomic]: https://golang.org/pkg/sync/atomic/
